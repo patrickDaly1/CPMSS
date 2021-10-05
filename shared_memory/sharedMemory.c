@@ -3,9 +3,10 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <stdbool.h>
 
 /** Shared memory struct */
-typedef struct PARKING {
+typedef struct shm {
     //Entrance #1
     // pthread_mutex_t for LPR
     pthread_mutex_t lpr_entrance_lock1;
@@ -205,7 +206,6 @@ typedef struct PARKING {
     // padding?
 
 
-
     //Level #1
     // pthread_mutex_t for LPR
     pthread_mutex_t lpr_level_lock1;
@@ -213,24 +213,67 @@ typedef struct PARKING {
     pthread_cond_t lpr_level_cond1;
     // license plate reading for LPR
     char *lpr_level_1;
-    // padding
-    // temperature sensor
-    
-    // fire alarm
-
     // padding?
-    //Level #2
+    // temperature sensor (just temperatue)
+    short tempSen1;
+    // fire alarm
+    bool alarm1;
+    // padding?
 
+    //Level #2
+    // pthread_mutex_t for LPR
+    pthread_mutex_t lpr_level_lock2;
+    // pthread_cond_t for LPR
+    pthread_cond_t lpr_level_cond2;
+    // license plate reading for LPR
+    char *lpr_level_2;
+    // padding?
+    // temperature sensor (just temperatue)
+    short tempSen2;
+    // fire alarm
+    bool alarm2;
+    // padding?
 
     //Level #3
-
+    // pthread_mutex_t for LPR
+    pthread_mutex_t lpr_level_lock3;
+    // pthread_cond_t for LPR
+    pthread_cond_t lpr_level_cond3;
+    // license plate reading for LPR
+    char *lpr_level_3;
+    // padding?
+    // temperature sensor (just temperatue)
+    short tempSen3;
+    // fire alarm
+    bool alarm3;
+    // padding?
 
     //Level #4
-
+    // pthread_mutex_t for LPR
+    pthread_mutex_t lpr_level_lock4;
+    // pthread_cond_t for LPR
+    pthread_cond_t lpr_level_cond4;
+    // license plate reading for LPR
+    char *lpr_level_4;
+    // padding?
+    // temperature sensor (just temperatue)
+    short tempSen4;
+    // fire alarm
+    bool alarm4;
+    // padding?
 
     //Level #5
+    // pthread_mutex_t for LPR
+    pthread_mutex_t lpr_level_lock5;
+    // pthread_cond_t for LPR
+    pthread_cond_t lpr_level_cond5;
+    // license plate reading for LPR
+    char *lpr_level_5;
+    // padding?
+    // temperature sensor (just temperatue)
+    short tempSen5;
+    // fire alarm
+    bool alarm5;
+    // padding?
 
-
-
-
-} PARKING;
+} shm;
