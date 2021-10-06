@@ -19,7 +19,6 @@
    - check if car waits before triggering lpr on exit
 
           ~~~ Structures ~~~ 
-
 car_struct {
         lp;
         entry_num;
