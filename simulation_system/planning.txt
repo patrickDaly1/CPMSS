@@ -1,7 +1,44 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        *** SETUP PLANNING ***     
+        *** CREATING NEW CAR ***     
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-       ~~~ Creating New Car ~~~ 
+       ~~~ General Opperation ~~~ 
+ - thinking thread that created new cars??
+ 1. every 1 - 100ms new car is created as thread which uses car struct and given random rego + random entry 
+    - use rand() to generage number which is used as wait time. make generator wait this amount of time to create new car
+ 2. car is placed in queue and will wait to reach from on queue
+    - determine how this queue will be made
+ 3. once at the front of the queue wait 2ms before triggering lpr reader
+ 4. if allowed in car will be given a number (parking spot) and will store this in struct. if not permitted will be given letter and car will vanish from sim
+ 5. trigger boom gate (10ms open and close) 
+ 6. car will then take 10ms to go park triggering lpr on the way 
+   - determine how this functionality of triggering lpr is actually gonna work
+7. generate random number between 100 - 10000ms and put thread to sleep
+8. car will then take 10ms to exit
+9. car will trigger exit lpr and wait for boom gates to open
+   - check if car waits before triggering lpr on exit
 
+          ~~~ Structures ~~~ 
 
+car_struct {
+        lp;
+        entry_num;
+        parking_num_
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+           *** TEMP SENSOR ***     
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+       ~~~ General Opperation ~~~ 
+ - one temp sensor per level
+ - shoudl these be threads that run functions to update values???
+ - every 1 - 5ms temp will change to rand values
+ - should be able to generate high value to test fire alarm
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+           *** BOOM GATE ***     
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+       ~~~ General Opperation ~~~ 
+ - talk about how we want to do this
+ - could just put car thread to sleep for open time (this does not acount for close time tho)
+ - maybe have it be a thread that updates a bit to determine if boom is closed or open
