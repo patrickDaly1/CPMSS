@@ -24,8 +24,23 @@
  * current status of boom gates, signs, temperature sensors and alarms and current car park revenue
  */
 
+/**
+ * What threads used? A. 1 for 
+ */
+
 int main(){
     //open the shared memory - PARKING
 
+    //Does manager use the hashtable? Might as well - would be useful
+
+
+    //tasks to do - maybe in while loop or they each are treads (no while loop needed) but must wait for them 
+    //to finish.
+    //1. Car park allocation: monotor LPR entrance sensors, when new rego read (check validity) then add to hash
+    //table (CHECK THIS) with time entered then tell boom gates to open. Note: when car parked on a level, if LPR on that 
+    //level picks up same rego AGAIN - remember it's already parked so don't add as parked.
+    //When do I tell boom gates to close? A. after car "enters" - LPR read, digital sign level displayed, 
+
+    //2. Car park deallocation: monitor LPR exit sensors, when 
 
 }
