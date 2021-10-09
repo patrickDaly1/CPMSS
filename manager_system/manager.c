@@ -25,22 +25,37 @@
  */
 
 /**
- * What threads used? A. 1 for 
+ * What threads used? A. 1 thread per entramce and exit (might have threads for an exit/entrance incase of
+ * differing number of entrances/exits)
  */
 
 int main(){
     //open the shared memory - PARKING
 
-    //Does manager use the hashtable? Might as well - would be useful
-
+    //setup hash table
+    /** Hash table values:
+     * Rego (string) (key)
+     * timeEntered (clock_t - maybe)
+     * levelParked (int)
+    */
 
     //tasks to do - maybe in while loop or they each are treads (no while loop needed) but must wait for them 
     //to finish.
-    //1. Car park allocation: monotor LPR entrance sensors, when new rego read (check validity) then add to hash
-    //table (CHECK THIS) with time entered then tell boom gates to open. Note: when car parked on a level, if LPR on that 
-    //level picks up same rego AGAIN - remember it's already parked so don't add as parked.
-    //When do I tell boom gates to close? A. after car "enters" - LPR read, digital sign level displayed, 
 
-    //2. Car park deallocation: monitor LPR exit sensors, when 
+    //Car park allocation: monotor LPR entrance sensors, when new rego read then check hash
+    //table and add time entered then tell boom gate to open for a certain period of time then close again.
+    
+    //Note: when car parked on a level, if LPR on that level picks up same rego AGAIN - remember it's already 
+    //parked so don't add as parked.
+    //Note: as car drives through the LPR sensors on ech level, if there is space on a level that it wasn't 
+    //told to park - add it as level parked until it finally reaches chooses one. 
 
+    //Car park deallocation: monitor LPR exit sensors, when rego read then the billing info is saved to file and
+    //boom gate opens for certain time then closes. 
+
+
+    //function: creates threads according to number of entrances/exits (account for differening number of 
+    //entrances and exits)
+
+    //function: display status of car park constantly (loop with sleep)
 }
