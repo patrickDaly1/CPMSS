@@ -9,12 +9,5 @@
 #define cars_per_level 20;
 
 main()
-{
-    thread1
-    - creating new car and adding them to queue
-    thread2 
-    - manages entry of cars
-    thread3 
-    - moving cars checking stay duration?
-    
+{    
 }
