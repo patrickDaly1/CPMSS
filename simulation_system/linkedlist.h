@@ -1,7 +1,9 @@
 #include <stdbool.h>
 #include <math.h>
 
-/* struct that holds relevant info for car */
+/**
+ * struct that holds relevant info for car 
+ */
 typedef struct car 
 {
     char *rego;
@@ -19,7 +21,7 @@ struct node
 };
 
 /* add new car to the end of linked list */
-node_t *node_add(node_t *head, car *car);
+node_t *node_add(node_t *head, car_t *car);
 
 /* remove car from the front of linked list */
 node_t *node_delete(node_t *head, char *rego);
@@ -31,7 +33,12 @@ node_t *find_car(node_t *head, char *rego);
  * initialises a new car to be added to the simulator
  *
  * 1. generate random new rego that isnt in currently in the system
- * 2. generate numer to determine which entry car should go to
- * 
-*/
-car_t car_init(int );
+ *  a. rego should be made up of 3 numbers and 3 random numbers
+ * 2. generate numer to determine which entry car should go to 
+ */
+car_t car_init(void);
+
+/**
+ * prints rego of all the cars in linked list
+ */
+void print_rego(node_t *head);
