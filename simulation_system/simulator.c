@@ -56,3 +56,20 @@ main()
         [1223, 1234,1234,1234]
     */
 }
+
+/**
+ * Creates new car to add to queue
+ * 
+ * 1. generate random rego (ie. 123ABC)
+ * 2. assign random enterence for car to go to
+ */
+car_t car_init(void)
+{
+    car_t *new_car = (car_t *)malloc(sizeof(car_t));
+
+    for(int i = 0; i < 3; i++)
+    {
+        new_car->rego[i];
+    }
+}
+

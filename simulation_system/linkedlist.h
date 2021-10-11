@@ -6,7 +6,7 @@
  */
 typedef struct car 
 {
-    char *rego;
+    char *rego[6];
     bool entered;
     int parking;
     int entry;
