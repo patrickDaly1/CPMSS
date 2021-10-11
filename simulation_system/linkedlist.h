@@ -33,14 +33,14 @@ struct node* newNode(car_t* car);
 struct queue* createQueue();
 
 /* add new car to the end of queue */
-void *addCar(struct queue* q, car_t *car);
+void *addCar(struct queue* q, car_t *car); // *** should this not be a queue_t ?? ***
 
 /* remove car from the front of the queue */
-void *removeCar(struct queue* q);
+void *removeCar(struct queue* q); // *** should this not be a queue_t ?? ***
 
 /* find car in list given car rego */
 //TODO - IMPLEMENT
-//node_t *findCar(node_t *head, char *rego);
+//node_t *findCar(queue_t q, char *rego);
 
 
 /**

@@ -3,7 +3,7 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <unistd.h>
-//#include "linkedlist.h"
+#include "linkedlist.h"
 
 #define entrys_exits 5;
 #define levels 5;
@@ -59,7 +59,7 @@ int main(int argc, char argv)
 
    pthread_t threads[THREADS];
 
-   pthread_create(&threads[0], NULL, temp_sensor, NULL);
+   pthread_create(&threads[0], NULL, (void *)temp_sensor, NULL);
    pthread_join(threads[0], NULL);
 }
 
@@ -70,8 +70,7 @@ int main(int argc, char argv)
  *  a. ensure this rego is not currently assigned to a car *** FIGURE OUT HOW TO DO THIS ***
  * 2. assign random enterence for car to go to
  */
-/*
-car_t *car_init(node_t *head)
+car_t *car_init(queue_t entry_queue)
 {
     // create new car structure
     car_t *new_car = (car_t *)malloc(sizeof(car_t));
@@ -97,13 +96,13 @@ car_t *car_init(node_t *head)
         }
 
         // check if car is already in list
-        if (!(find_car(head, new_car->rego)))
+        if (!(find_car(entry_queue, new_car->rego)))
         {
             return new_car;
         }
     }
 }
-*/
+
 
 /**
  * Function responsible for managing adding new cars into the system
@@ -111,17 +110,16 @@ car_t *car_init(node_t *head)
  * 1. create new car and add to queue
  * 2. sleep for 1 - 100ms
  */
-/*
-void car_queuer(node_t *head)
+void car_queuer(queue_t entry_queue)
 {
     for(;;)
     {
         // initialise new car and add to queue
-        node_add(head, car_init(head));
+        addCar(entry_queue, car_init(entry_queue));
         // sleep for 1 - 100 ms
         usleep(((rand() % 100) + 1) * 1000);    
     }
-}*/
+}
 
 /**
  * Function to simulate temperature sensor
@@ -133,8 +131,7 @@ void *temp_sensor(void)
     for(int i = 0; i < 50; i++)
     {
         // update temp global value here
-        short temp = rand()%32;
-        printf("%d", temp);
+        // printf("%d\n", (rand() % 4) + 21);
         usleep(((rand() % 5) + 1 ) * 1000);
     }
 }
