@@ -3,13 +3,14 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include "linkedlist.h"
+//#include "linkedlist.h"
 
 #define entrys_exits 5;
 #define levels 5;
 #define cars_per_level 20;
+void *temp_sensor(void);
 
-main()
+int main(int argc, char argv)
 {    
     /* Task - car generating thread
         1. initialise new thread 
@@ -52,9 +53,14 @@ main()
             }
             update list
         }
-        create new thread 
-        [1223, 1234,1234,1234]
     */
+
+   const int THREADS = 1;
+
+   pthread_t threads[THREADS];
+
+   pthread_create(&threads[0], NULL, temp_sensor, NULL);
+   pthread_join(threads[0], NULL);
 }
 
 /**
@@ -64,7 +70,8 @@ main()
  *  a. ensure this rego is not currently assigned to a car *** FIGURE OUT HOW TO DO THIS ***
  * 2. assign random enterence for car to go to
  */
-car_t *car_init(void)
+/*
+car_t *car_init(node_t *head)
 {
     // create new car structure
     car_t *new_car = (car_t *)malloc(sizeof(car_t));
@@ -72,23 +79,31 @@ car_t *car_init(void)
     // generate random rego values
     int odds = rand() % 4;
 
-    // assign to random entry
+    // create random probability of guarenteed entry
     new_car->entry = rand() % entrys_exits;
-
-
-    if(odds == 0)
+    for (;;)
     {
-        // choose from plates.txt file
-    }
-    else
-    {
-        for(int i = 0; i < 3; i++)
+        if(odds == 0)
         {
-            new_car->rego[i] = (char)((rand() % 26) + 65);
-            new_car->rego[i + 3] = (char)(rand() % 10);
+            // choose from plates.txt file
+        }
+        else
+        {
+            for(int i = 0; i < 3; i++)
+            {
+                new_car->rego[i] = (char)((rand() % 26) + 65);
+                new_car->rego[i + 3] = (char)(rand() % 10);
+            }
+        }
+
+        // check if car is already in list
+        if (!(find_car(head, new_car->rego)))
+        {
+            return new_car;
         }
     }
 }
+*/
 
 /**
  * Function responsible for managing adding new cars into the system
@@ -96,9 +111,31 @@ car_t *car_init(void)
  * 1. create new car and add to queue
  * 2. sleep for 1 - 100ms
  */
-void car_queuer(void)
+/*
+void car_queuer(node_t *head)
 {
     for(;;)
-    {}
+    {
+        // initialise new car and add to queue
+        node_add(head, car_init(head));
+        // sleep for 1 - 100 ms
+        usleep(((rand() % 100) + 1) * 1000);    
+    }
+}*/
+
+/**
+ * Function to simulate temperature sensor
+ * 
+ * 1. every 1 - 5 seconds update sensor with new temp
+ */
+void *temp_sensor(void)
+{
+    for(int i = 0; i < 50; i++)
+    {
+        // update temp global value here
+        short temp = rand()%32;
+        printf("%d", temp);
+        usleep(((rand() % 5) + 1 ) * 1000);
+    }
 }
 
