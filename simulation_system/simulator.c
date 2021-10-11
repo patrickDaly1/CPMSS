@@ -13,7 +13,7 @@ main()
 {    
     /* Task - car generating thread
         1. initialise new thread 
-        2. initialise linke list for queue
+        2. initialise linked list for queue
         2. create new car
             a. each car is given random rego (ie. 123ABC)
             b. each car is given random entry to queue at
@@ -60,16 +60,45 @@ main()
 /**
  * Creates new car to add to queue
  * 
- * 1. generate random rego (ie. 123ABC)
+ * 1. generate random rego (ie. 123ABC) 
+ *  a. ensure this rego is not currently assigned to a car *** FIGURE OUT HOW TO DO THIS ***
  * 2. assign random enterence for car to go to
  */
-car_t car_init(void)
+car_t *car_init(void)
 {
+    // create new car structure
     car_t *new_car = (car_t *)malloc(sizeof(car_t));
 
-    for(int i = 0; i < 3; i++)
+    // generate random rego values
+    int odds = rand() % 4;
+
+    // assign to random entry
+    new_car->entry = rand() % entrys_exits;
+
+
+    if(odds == 0)
     {
-        new_car->rego[i];
+        // choose from plates.txt file
     }
+    else
+    {
+        for(int i = 0; i < 3; i++)
+        {
+            new_car->rego[i] = (char)((rand() % 26) + 65);
+            new_car->rego[i + 3] = (char)(rand() % 10);
+        }
+    }
+}
+
+/**
+ * Function responsible for managing adding new cars into the system
+ * 
+ * 1. create new car and add to queue
+ * 2. sleep for 1 - 100ms
+ */
+void car_queuer(void)
+{
+    for(;;)
+    {}
 }
 
