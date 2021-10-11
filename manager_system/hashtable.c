@@ -9,7 +9,7 @@ typedef struct item item_t;
 struct item
 {
     char *rego; //key
-    clock_t timeEntered;
+    clock_t timeEntered; //change to structs
     int levelParked;
     item_t *next;
 };
