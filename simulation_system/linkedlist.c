@@ -19,7 +19,7 @@ struct queue* createQueue()
     return q;
 }
 
-void addCar(struct queue* q, car_t* car)
+void *addCar(struct queue* q, car_t* car)
 {
     // Create a new LL node
     struct node* temp = newNode(car);
@@ -35,7 +35,7 @@ void addCar(struct queue* q, car_t* car)
     q->rear = temp;
 }
 
-void removeCar(struct queue* q)
+void *removeCar(struct queue* q)
 {
     // If queue is empty, return NULL.
     if (q->front == NULL)
