@@ -16,7 +16,7 @@ typedef struct car
 typedef struct node node_t;
 struct node
 {
-    car_t *person;
+    car_t *car;
     node_t *next;
 };
 
