@@ -12,7 +12,7 @@ typedef struct car
     int entry;
 } car_t;
 
-/* node in linked list that holds car */
+/* node in linked list that holds a car struct */
 typedef struct node node_t;
 struct node
 {
@@ -20,17 +20,30 @@ struct node
     node_t *next;
 };
 
-/* add new car to the end of linked list */
-node_t *node_add(node_t *head, car_t *car);
+/* The queue, front stores the front node of LL and rear stores the last node of LL */
+typedef struct queue queue_t;
+struct queue {
+    struct node* front, * rear;
+};
 
-/* remove car from the front of linked list */
-node_t *node_delete(node_t *head, char *rego);
+/* A utility function to create a new linked list node. */
+struct node* newNode(car_t* car);
+
+/* A utility function to create an empty queue */
+struct queue* createQueue();
+
+/* add new car to the end of queue */
+void *addCar(struct queue* q, car_t *car);
+
+/* remove car from the front of the queue */
+void *removeCar(struct queue* q);
 
 /* find car in list given car rego */
-node_t *find_car(node_t *head, char *rego);
+//TODO - IMPLEMENT
+//node_t *findCar(node_t *head, char *rego);
 
 
 /**
  * prints rego of all the cars in linked list
  */
-void print_rego(node_t *head);
+void printRego(node_t *head);

@@ -7,6 +7,10 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+#define entrys 5;
+#define exits 5;
+#define levels 5;
+#define cars_per_level 20;
 
 /** The Manager 
  * 
@@ -29,7 +33,36 @@
  * differing number of entrances/exits)
  */
 
-int main(){
+
+//Pass the shared memory and the rego hash table
+//A mini manager is what manages at maximum 1 exit and 1 entrance
+void miniManagerCreater() {
+
+}
+
+//pass the shared memory and rego hash table
+void displayStatus() {
+
+}
+
+//pass shared memory and rego hasth table
+void parkingManager() {
+    //a single thread that manages car info after they've entered and before tehy exit
+
+    //How to remember if car has entered that level before
+
+    //if car 'enteres a level' (first time LPR has read that car) and there is room on that level - 
+    //change car level to that level.
+
+    //'enteres a level' check: 
+    //1. if levelParked is less than the current level - parking on this level if room.
+    //2. if levelParked is greater than or equal to current level - leaving and don't alter parking space.
+    //Do we check if car went to top level and couldn't find a park to came back down?
+
+
+}
+
+int main() {
     //open the shared memory - PARKING
 
     //setup hash table
@@ -38,9 +71,6 @@ int main(){
      * timeEntered (clock_t - maybe)
      * levelParked (int)
     */
-
-    //tasks to do - maybe in while loop or they each are treads (no while loop needed) but must wait for them 
-    //to finish.
 
     //Car park allocation: monotor LPR entrance sensors, when new rego read then check hash
     //table and add time entered then tell boom gate to open for a certain period of time then close again.
@@ -58,4 +88,5 @@ int main(){
     //entrances and exits)
 
     //function: display status of car park constantly (loop with sleep)
+
 }
