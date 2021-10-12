@@ -6,6 +6,10 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include "hashtable.h"
+#include "../shared_memory/sharedMemory.h"
+#include <sys/stat.h>
+#include <semaphore.h>
 
 #define entrys 5;
 #define exits 5;
@@ -63,8 +67,32 @@ void parkingManager() {
 }
 
 int main() {
-    //open the shared memory - PARKING
+    //open the shared memory - PARKING (PARKING_TEST for test)
+    int shm_fd;
+    const char *key = "PARKING_TEST";
+    shm *sharedMem;
+    /*
+     * Locate the segment.
+     */
+    if ((shm_fd = shm_open(key, O_RDWR, 0)) < 0)
+    {
+        perror("shm_open");
+        return 1;
+    }
 
+    /*
+     * Now attach segment to our data space.
+     */
+    if ((sharedMem = (shm *)mmap(0, sizeof(shm), PROT_WRITE, MAP_SHARED, shm_fd, 0)) == (shm *)-1)
+    {
+        perror("mmap");
+        return 1;
+    }
+
+    //now read what was stored from temp
+    printf("stored rego in lpr: %s\n", sharedMem->lpr_entrance_1);
+
+    
     //setup hash table
     /** Hash table values:
      * Rego (string) (key)
@@ -88,5 +116,5 @@ int main() {
     //entrances and exits)
 
     //function: display status of car park constantly (loop with sleep)
-
+    return 0;
 }
