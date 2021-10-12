@@ -8,7 +8,10 @@
 #define entrys_exits 5;
 #define levels 5;
 #define cars_per_level 20;
+
 void *temp_sensor(void);
+car_t *car_init(queue_t entry_queue);
+void car_queuer(queue_t entry_queue);
 
 int main(int argc, char argv)
 {    
