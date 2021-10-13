@@ -13,7 +13,7 @@ typedef struct shm {
     // pthread_cond_t for LPR
     pthread_cond_t lpr_entrance_cond1;
     // license plate reading for LPR
-    char *lpr_entrance_1; //this suppose to be char lpr_entrance_1[length] instead?
+    char *lpr_entrance_1[6]; // *** this suppose to be char lpr_entrance_1[length] instead? ***
     //pthread_mutex_t for boom gate
     pthread_mutex_t bg_entrance_lock1;
     // pthread_cond_t for boom gate
@@ -33,7 +33,7 @@ typedef struct shm {
     // pthread_cond_t for LPR
     pthread_cond_t lpr_entrance_cond2;
     // license plate reading for LPR
-    char *lpr_entrance_2;
+    char *lpr_entrance_2[6];
     //pthread_mutex_t for boom gate
     pthread_mutex_t bg_entrance_lock2;
     // pthread_cond_t for boom gate
@@ -54,7 +54,7 @@ typedef struct shm {
     // pthread_cond_t for LPR
     pthread_cond_t lpr_entrance_cond3;
     // license plate reading for LPR
-    char *lpr_entrance_3;
+    char *lpr_entrance_3[6];
     //pthread_mutex_t for boom gate
     pthread_mutex_t bg_entrance_lock3;
     // pthread_cond_t for boom gate
@@ -75,7 +75,7 @@ typedef struct shm {
     // pthread_cond_t for LPR
     pthread_cond_t lpr_entrance_cond4;
     // license plate reading for LPR
-    char *lpr_entrance_4;
+    char *lpr_entrance_4[6];
     //pthread_mutex_t for boom gate
     pthread_mutex_t bg_entrance_lock4;
     // pthread_cond_t for boom gate
@@ -96,7 +96,7 @@ typedef struct shm {
     // pthread_cond_t for LPR
     pthread_cond_t lpr_entrance_cond5;
     // license plate reading for LPR
-    char *lpr_entrance_5;
+    char *lpr_entrance_5[6];
     //pthread_mutex_t for boom gate
     pthread_mutex_t bg_entrance_lock5;
     // pthread_cond_t for boom gate
@@ -119,7 +119,7 @@ typedef struct shm {
     // pthread_cond_t for LPR
     pthread_cond_t lpr_exit_cond1;
     // license plate reading for LPR
-    char *lpr_exit_1;
+    char *lpr_exit_1[6];
     // pthread_mutex_t for boom gate
     pthread_mutex_t bg_exit_lock1;
     // pthread_cond_t for boom gate
@@ -134,7 +134,7 @@ typedef struct shm {
     // pthread_cond_t for LPR
     pthread_cond_t lpr_exit_cond2;
     // license plate reading for LPR
-    char *lpr_exit_2;
+    char *lpr_exit_2[6];
     // pthread_mutex_t for boom gate
     pthread_mutex_t bg_exit_lock2;
     // pthread_cond_t for boom gate
@@ -149,7 +149,7 @@ typedef struct shm {
     // pthread_cond_t for LPR
     pthread_cond_t lpr_exit_cond3;
     // license plate reading for LPR
-    char *lpr_exit_3;
+    char *lpr_exit_3[6];
     // pthread_mutex_t for boom gate
     pthread_mutex_t bg_exit_lock3;
     // pthread_cond_t for boom gate
@@ -163,7 +163,7 @@ typedef struct shm {
     // pthread_cond_t for LPR
     pthread_cond_t lpr_exit_cond4;
     // license plate reading for LPR
-    char *lpr_exit_4;
+    char *lpr_exit_4[6];
     // pthread_mutex_t for boom gate
     pthread_mutex_t bg_exit_lock4;
     // pthread_cond_t for boom gate
@@ -177,7 +177,7 @@ typedef struct shm {
     // pthread_cond_t for LPR
     pthread_cond_t lpr_exit_cond5;
     // license plate reading for LPR
-    char *lpr_exit_5;
+    char *lpr_exit_5[6];
     // pthread_mutex_t for boom gate
     pthread_mutex_t bg_exit_lock5;
     // pthread_cond_t for boom gate
@@ -192,7 +192,7 @@ typedef struct shm {
     // pthread_cond_t for LPR
     pthread_cond_t lpr_level_cond1;
     // license plate reading for LPR
-    char *lpr_level_1;
+    char *lpr_level_1[6];
     // temperature sensor (just temperatue)
     short tempSen1;
     // fire alarm
@@ -204,7 +204,7 @@ typedef struct shm {
     // pthread_cond_t for LPR
     pthread_cond_t lpr_level_cond2;
     // license plate reading for LPR
-    char *lpr_level_2;
+    char *lpr_level_2[6];
     // temperature sensor (just temperatue)
     short tempSen2;
     // fire alarm
@@ -216,7 +216,7 @@ typedef struct shm {
     // pthread_cond_t for LPR
     pthread_cond_t lpr_level_cond3;
     // license plate reading for LPR
-    char *lpr_level_3;
+    char *lpr_level_3[6];
     // temperature sensor (just temperatue)
     short tempSen3;
     // fire alarm
@@ -228,7 +228,7 @@ typedef struct shm {
     // pthread_cond_t for LPR
     pthread_cond_t lpr_level_cond4;
     // license plate reading for LPR
-    char *lpr_level_4;
+    char *lpr_level_4[6];
     // temperature sensor (just temperatue)
     short tempSen4;
     // fire alarm
@@ -240,7 +240,7 @@ typedef struct shm {
     // pthread_cond_t for LPR
     pthread_cond_t lpr_level_cond5;
     // license plate reading for LPR
-    char *lpr_level_5;
+    char *lpr_level_5[6];
     // temperature sensor (just temperatue)
     short tempSen5;
     // fire alarm
