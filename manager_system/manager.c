@@ -83,7 +83,7 @@ int main() {
     /*
      * Now attach segment to our data space.
      */
-    if ((sharedMem = (shm *)mmap(0, sizeof(shm), PROT_WRITE, MAP_SHARED, shm_fd, 0)) == (shm *)-1)
+    if ((sharedMem = (shm *)mmap(0, 2920, PROT_WRITE, MAP_SHARED, shm_fd, 0)) == (void *)-1)
     {
         perror("mmap");
         return 1;

@@ -36,8 +36,8 @@ int main() {
         return 1;
     }
 
-    ftruncate(shm_fd, sizeof(shm));
-    if ((sharedMem = (shm *)mmap(0, sizeof(shm), PROT_WRITE, MAP_SHARED, shm_fd, 0)) == (shm *)-1)
+    ftruncate(shm_fd, 2920);
+    if ((sharedMem = (shm *)mmap(0, 2920, PROT_WRITE, MAP_SHARED, shm_fd, 0)) == (void *)-1)
     {
         perror("mmap");
         return 1;
@@ -49,7 +49,7 @@ int main() {
         //until program is stopped by user - for testing
     }
     //close
-    if (munmap(sharedMem, sizeof(shm)) != 0) {
+    if (munmap(sharedMem, 2920) != 0) {
         perror("munmap() failed");
     }
 
