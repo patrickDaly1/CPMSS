@@ -7,7 +7,6 @@
 typedef struct car 
 {
     char *rego[6];
-    bool entered;
     int parking;
     int entry;
 } car_t;
@@ -36,10 +35,12 @@ struct queue* createQueue();
 void *addCar(struct queue* q, car_t *car); // *** should this not be a queue_t ?? ***
 
 /* remove car from the front of the queue */
-void *removeCar(struct queue* q); // *** should this not be a queue_t ?? ***
+void *removeCar(struct queue* q); // could we maybe change this to remove car based on rego given?
 
 /* find car in list given car rego */
 //TODO - IMPLEMENT
+// *** maybe have two find car functions one that finds based of rego 
+// other that finds first car in list with specified entry number ***
 //node_t *findCar(queue_t q, char *rego);
 
 

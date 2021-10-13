@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "linkedlist.h"
+#include "../shared_memory/sharedMemory.h"
 
 #define entrys_exits 5;
 #define levels 5;
@@ -15,55 +16,36 @@ void car_queuer(queue_t entry_queue);
 
 int main(int argc, char argv)
 {    
-    /* Task - car generating thread
-        1. initialise new thread 
-        2. initialise linked list for queue
-        2. create new car
-            a. each car is given random rego (ie. 123ABC)
-            b. each car is given random entry to queue at
-        3. add car to the end of the queue
-        4. sleep thread for 1 - 100ms
-    */
+    /* OPEN SHARED MEMORY */
+    int shm_fd;
+    shm *sharedMem;
+    const char *key = "PARKING_TEST";
+    if((shm_fd = shm_open(key, O_CREAT | O_RDWR, 0666)) < 0) {
+        perror("shm_open");
+        return 1;
+    }
 
-    /* Task - entry checking thread
-        1. check which boom gate is ready for new car
-        2. locate first car in queue that corresponds to entry
-        3. after 2ms pass car rego to manager 
-        4. read if car is accepted into 
-        5. wait 10ms for boom gate to open 
-        6. remove car from queue and add to list of cars in carpark
-        7. wait 10ms for boom gate to close 
-    */
+    ftruncate(shm_fd, 2920);
+    if ((sharedMem = (shm *)mmap(0, 2920, PROT_WRITE, MAP_SHARED, shm_fd, 0)) == (void *)-1)
+    {
+        perror("mmap");
+        return 1;
+    }
 
-    /* Task - car driving thread
-        1. checks if there are any new cars entering car park
-            a. if yes begin thier 10ms trip to parking space (l3 park 15)
-            b. once on level trigger lpr on that level
-            c. park car for random amount of time
-        2. check if any cars are finished parking
-            a. if yes begin journey to random exit 10ms 
-            b. trigger lpr at exit
+    /* INITIALISE CAR GENERATING THREAD */
 
-        for (;;)
-        {
-            foreach(car in list)
-            {
-                if entered
-                    begin journey (starts 10ms timer)
-                else if driving
-                    checks timer < 10ms park car
-                else if parked
-            }
-            update list
-        }
-    */
+    /* INITIALISE BOOM GATE THREADS */
 
-   const int THREADS = 1;
+    /* INITIALISE TEMP SENSOR THREADS */
 
-   pthread_t threads[THREADS];
+    /* CLOSE SHARED MEMORY */
+    if (munmap(sharedMem, 2920) != 0) {
+        perror("munmap() failed");
+    }
 
-   pthread_create(&threads[0], NULL, (void *)temp_sensor, NULL);
-   pthread_join(threads[0], NULL);
+    if (shm_unlink(key) != 0) {
+        perror("shm_unlink() failed");
+    }
 }
 
 /**
@@ -73,7 +55,7 @@ int main(int argc, char argv)
  *  a. ensure this rego is not currently assigned to a car *** FIGURE OUT HOW TO DO THIS ***
  * 2. assign random enterence for car to go to
  */
-car_t *car_init(queue_t entry_queue)
+car_t *car_init(queue_t *entry_queue)
 {
     // create new car structure
     car_t *new_car = (car_t *)malloc(sizeof(car_t));
@@ -113,7 +95,7 @@ car_t *car_init(queue_t entry_queue)
  * 1. create new car and add to queue
  * 2. sleep for 1 - 100ms
  */
-void car_queuer(queue_t entry_queue)
+void *car_queuer(queue_t *entry_queue)
 {
     for(;;)
     {
@@ -122,6 +104,51 @@ void car_queuer(queue_t entry_queue)
         // sleep for 1 - 100 ms
         usleep(((rand() % 100) + 1) * 1000);    
     }
+}
+
+/** 
+ * Function responsible for managing the entry of new cars
+ * 
+ * 1. sleep thread for (2ms) 
+ * 2. find first car from queue that corresponds to correct enterence. 
+ * 3. read rego from car and update lpr for corresponding enterence and wait for manager response
+ *  a. if denied remove from queue
+ *  b. if allowed proceed with below
+ * 4. sleep for 10ms (boom gate opening)
+ * 5. create new car thread and remove from queue
+ * 6. sleep 10ms (boom gate closing)
+ * 7. loop to top        
+ */
+void *boom_gate(queue_t *entry_queue)
+{
+    // loop infinately
+    for(;;)
+    {
+        usleep(2000); // wait for car
+        
+        usleep(10000); // open boom gate
+
+        /* CREATE NEW CAR THREAD */
+
+        usleep(10000); // close boom gate
+    }
+}
+
+/**
+ * Function to manage the simulation of car within carpark
+ * 
+ * 1. sleep for 10ms (traveling to parking)
+ * 2. trigger LPR for corresponding level
+ * 3. sleep for 100 - 1000 ms
+ * 4. trigger level lpr on exit
+ * 5. sleep for 10ms (traveling to random exit)
+ * 6. trigger corresponding exit LRP
+ */
+void *car_movement(car_t car_data)
+{
+    usleep(10000); // travel to parking
+ 
+    usleep(((rand() % 900) + 101) * 1000);
 }
 
 /**
@@ -135,7 +162,7 @@ void *temp_sensor(void)
     {
         // update temp global value here
         // printf("%d\n", (rand() % 4) + 21);
-        usleep(((rand() % 5) + 1 ) * 1000);
+        usleep(((rand() % 5) + 20) * 1000);
     }
 }
 
