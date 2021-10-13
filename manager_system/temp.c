@@ -42,7 +42,8 @@ int main() {
         perror("mmap");
         return 1;
     }
-    sharedMem->lpr_entrance_1 = "fakeRego0";
+    
+    sharedMem->lpr_entrance_1 = "123ABC";
 
     printf("stored rego in lpr: %s\n", sharedMem->lpr_entrance_1);
     while(1){
