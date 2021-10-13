@@ -32,13 +32,16 @@ int main() {
     int shm_fd;
     shm *sharedMem;
     const char *key = "PARKING_TEST";
-    if((shm_fd = shm_open(key, O_CREAT | O_RDWR, 0666)) < 0) {
+
+    shm_fd = shm_open(key, O_CREAT | O_RDWR, 0666);
+    if(shm_fd < 0) {
         perror("shm_open");
         return 1;
     }
 
     ftruncate(shm_fd, shmSize);
-    if ((sharedMem = (shm *)mmap(0, shmSize, PROT_WRITE, MAP_SHARED, shm_fd, 0)) == (void *)-1)
+
+    if ((sharedMem = mmap(0, shmSize, PROT_WRITE | PROT_READ, MAP_SHARED, shm_fd, 0)) == (shm *)-1)
     {
         perror("mmap");
         return 1;
@@ -54,10 +57,10 @@ int main() {
     printf("stored rego in lpr: ");
     for (int i = 0; i < 6; i++)
     {
-        printf("%c", sharedMem->lpr_entrance_1[i]);
+        printf("%s", sharedMem->lpr_entrance_1[i]);
     }
     printf("\n");
-    
+
     while(1){
         //until program is stopped by user - for testing
     }

@@ -84,7 +84,7 @@ int main() {
      * Now attach segment to our data space.
      */
     size_t shmSize = 2920;
-    if ((sharedMem = (shm *)mmap(0, shmSize, PROT_WRITE, MAP_SHARED, shm_fd, 0)) == (void *)-1)
+    if ((sharedMem = mmap(0, shmSize, PROT_WRITE | PROT_READ, MAP_SHARED, shm_fd, 0)) == (shm *)-1)
     {
         perror("mmap");
         return 1;
@@ -94,7 +94,7 @@ int main() {
     printf("stored rego in lpr: ");
     for (int i = 0; i < 6; i++)
     {
-        printf("%c", sharedMem->lpr_entrance_1[i]);
+        printf("%s", sharedMem->lpr_entrance_1[i]);
     }
     printf("\n");
 
