@@ -13,7 +13,7 @@ typedef struct shm {
     // pthread_cond_t for LPR
     pthread_cond_t lpr_entrance_cond1;
     // license plate reading for LPR
-    char *lpr_entrance_1[6]; // *** this suppose to be char lpr_entrance_1[length] instead? ***
+    char *lpr_entrance_1[7]; // *** this suppose to be char lpr_entrance_1[length] instead? ***
     //pthread_mutex_t for boom gate
     pthread_mutex_t bg_entrance_lock1;
     // pthread_cond_t for boom gate

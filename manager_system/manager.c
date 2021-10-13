@@ -91,7 +91,12 @@ int main() {
     }
 
     //now read what was stored from temp
-    printf("stored rego in lpr: %s\n", sharedMem->lpr_entrance_1);
+    printf("stored rego in lpr: ");
+    for (int i = 0; i < 6; i++)
+    {
+        printf("%c", sharedMem->lpr_entrance_1[i]);
+    }
+    printf("\n");
 
     
     //setup hash table

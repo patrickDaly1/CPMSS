@@ -44,9 +44,20 @@ int main() {
         return 1;
     }
     
-    sharedMem->lpr_entrance_1 = "123ABC";
+    sharedMem->lpr_entrance_1[0] = "1";
+    sharedMem->lpr_entrance_1[1] = "2";
+    sharedMem->lpr_entrance_1[2] = "3";
+    sharedMem->lpr_entrance_1[3] = "A";
+    sharedMem->lpr_entrance_1[4] = "B";
+    sharedMem->lpr_entrance_1[5] = "C";
 
-    printf("stored rego in lpr: %s\n", sharedMem->lpr_entrance_1);
+    printf("stored rego in lpr: ");
+    for (int i = 0; i < 6; i++)
+    {
+        printf("%c", sharedMem->lpr_entrance_1[i]);
+    }
+    printf("\n");
+    
     while(1){
         //until program is stopped by user - for testing
     }
