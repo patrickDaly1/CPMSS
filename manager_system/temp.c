@@ -28,6 +28,7 @@ int main() {
     // htab_print(htb);
 
     //create temporary shared memory
+    size_t shmSize = 2920;
     int shm_fd;
     shm *sharedMem;
     const char *key = "PARKING_TEST";
@@ -36,8 +37,8 @@ int main() {
         return 1;
     }
 
-    ftruncate(shm_fd, 2920);
-    if ((sharedMem = (shm *)mmap(0, 2920, PROT_WRITE, MAP_SHARED, shm_fd, 0)) == (void *)-1)
+    ftruncate(shm_fd, shmSize);
+    if ((sharedMem = (shm *)mmap(0, shmSize, PROT_WRITE, MAP_SHARED, shm_fd, 0)) == (void *)-1)
     {
         perror("mmap");
         return 1;
@@ -49,7 +50,7 @@ int main() {
         //until program is stopped by user - for testing
     }
     //close
-    if (munmap(sharedMem, 2920) != 0) {
+    if (munmap(sharedMem, shmSize) != 0) {
         perror("munmap() failed");
     }
 
