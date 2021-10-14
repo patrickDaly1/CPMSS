@@ -11,10 +11,10 @@
 #include <sys/stat.h>
 #include <semaphore.h>
 
-#define entrys 5;
-#define exits 5;
-#define levels 5;
-#define cars_per_level 20;
+#define NUM_ENTRANCES 5
+#define NUM_EXITS 5
+#define NUM_LEVELS 5
+#define NUM_CARS_PER_LEVEL 20;
 
 /** The Manager 
  * 
@@ -67,10 +67,11 @@ void parkingManager() {
 }
 
 int main(void) {
-    //open the shared memory - PARKING (PARKING_TEST for test)
+    //open the shared memory - key: PARKING (PARKING_TEST for test)
     int shm_fd;
-    const char *key = "PARKING_TEST";
+    const char *key = "PARKING_TEST"; //change to "PARKING"
     shm *sharedMem;
+    size_t shmSize = 2920;
     /*
      * Locate the segment.
      */
@@ -79,20 +80,18 @@ int main(void) {
         perror("shm_open");
         return 1;
     }
-
     /*
      * Now attach segment to our data space.
      */
-    size_t shmSize = 2920;
     if ((sharedMem = (shm *)mmap(0, shmSize, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0)) == (void *)-1)
     {
         perror("mmap");
         return 1;
     }
 
-    //now read what was stored from temp
-    printf("%s", sharedMem->entrances[0].LPR.rego);
-    printf("\n");
+    //now read what was stored from temp - test
+    // printf("%s", sharedMem->entrances[0].LPR.rego);
+    // printf("\n");
 
     //close
     if (munmap(sharedMem, shmSize) != 0) {
