@@ -46,10 +46,10 @@ int main() {
         perror("mmap");
         return 1;
     }
-    strcpy(sharedMem->lpr_entrance_1, "rego");
+    strcpy(sharedMem->entrances[0].LPR.rego, "rego");
     // sharedMem->lpr_entrance_1 = "rego";
 
-    printf("%s\n", sharedMem->lpr_entrance_1);
+    printf("%s\n", sharedMem->entrances[0].LPR.rego);
 
     while(1){
         //until program is stopped by user - for testing

@@ -91,7 +91,7 @@ int main(void) {
     }
 
     //now read what was stored from temp
-    printf("%s", sharedMem->lpr_entrance_1);
+    printf("%s", sharedMem->entrances[0].LPR.rego);
     printf("\n");
 
     //close
