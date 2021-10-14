@@ -3,6 +3,7 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <omp.h>  
 #include "linkedlist.h"
 #include "../shared_memory/sharedMemory.h"
 
@@ -17,16 +18,20 @@ void car_queuer(queue_t entry_queue);
 int main(int argc, char argv)
 {    
     /* OPEN SHARED MEMORY */
+    size_t shmSize = 2920;
     int shm_fd;
     shm *sharedMem;
     const char *key = "PARKING_TEST";
-    if((shm_fd = shm_open(key, O_CREAT | O_RDWR, 0666)) < 0) {
+
+    shm_fd = shm_open(key, O_CREAT | O_RDWR, 0666);
+    if(shm_fd < 0) {
         perror("shm_open");
         return 1;
     }
 
-    ftruncate(shm_fd, 2920);
-    if ((sharedMem = (shm *)mmap(0, 2920, PROT_WRITE, MAP_SHARED, shm_fd, 0)) == (void *)-1)
+    ftruncate(shm_fd, shmSize);
+
+    if ((sharedMem = (shm *)mmap(0, shmSize, PROT_WRITE | PROT_READ, MAP_SHARED, shm_fd, 0)) == (void *)-1)
     {
         perror("mmap");
         return 1;
@@ -34,17 +39,25 @@ int main(int argc, char argv)
 
     /* INITIALISE CAR GENERATING THREAD */
 
+
     /* INITIALISE BOOM GATE THREADS */
 
     /* INITIALISE TEMP SENSOR THREADS */
+    const int THREADS = 2;
+	
+	pthread_t threads[THREADS];
+
+    pthread_create(&threads[1], NULL, temp_sensor(), NULL);
+    pthread_create(&threads[2], NULL, temp_sensor2(), NULL);
+
 
     /* CLOSE SHARED MEMORY */
-    if (munmap(sharedMem, 2920) != 0) {
-        perror("munmap() failed");
+    if (munmap(sharedMem, shmSize) != 0) {
+        perror("munmap");
     }
 
     if (shm_unlink(key) != 0) {
-        perror("shm_unlink() failed");
+        perror("shm_unlink");
     }
 }
 
@@ -161,7 +174,16 @@ void *temp_sensor(void)
     for(int i = 0; i < 50; i++)
     {
         // update temp global value here
-        // printf("%d\n", (rand() % 4) + 21);
+        printf("%d from 1\n", (rand() % 4) + 21);
+        usleep(((rand() % 5) + 20) * 1000);
+    }
+}
+void *temp_sensor2(void)
+{
+    for(int i = 0; i < 50; i++)
+    {
+        // update temp global value here
+        printf("%d from 2\n", (rand() % 4) + 21);
         usleep(((rand() % 5) + 20) * 1000);
     }
 }
