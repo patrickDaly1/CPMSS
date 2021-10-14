@@ -3,7 +3,8 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <omp.h>  
+#include <sys/mman.h>
+#include <semaphore.h>
 #include "linkedlist.h"
 #include "../shared_memory/sharedMemory.h"
 
@@ -11,12 +12,19 @@
 #define levels 5;
 #define cars_per_level 20;
 
+pthread_mutex_t lock;
+typedef struct boom_data
+{
+    queue_t *entry_queue;
+    int entry;
+}boom_data_t;
+
 void *temp_sensor(void);
-car_t *car_init(queue_t entry_queue);
-void car_queuer(queue_t entry_queue);
+//car_t *car_init(queue_t entry_queue);
+//void car_queuer(queue_t entry_queue);
 
 int main(int argc, char argv)
-{    
+{ 
     /* OPEN SHARED MEMORY */
     size_t shmSize = 2920;
     int shm_fd;
@@ -37,19 +45,32 @@ int main(int argc, char argv)
         return 1;
     }
 
-    /* INITIALISE CAR GENERATING THREAD */
+    // set threads
+    pthread_t temp_sensor_thread, car_init_thread;
+    pthread_t boom_gate_entry_thread[entrys_exits], boom_gate_exit_thread[entrys_exits];
 
+    /* INITIALISE CAR GENERATING THREAD */
+    pthread_create(car_init_thread, NULL, (void *) car_init, NULL); // *** upadate to have entry queue ***
 
     /* INITIALISE BOOM GATE THREADS */
+    boom_data_t data;
+    data->entry_queue = NULL; // *** upadate to have entry queue ***
+    for (int i = 0; i < entrys_exits; i++)
+    {
+        data->entry = i;
+        pthread_create(boom_gate_entry_thread[i], NULL, (void *) boom_gate, data);
+    }
 
     /* INITIALISE TEMP SENSOR THREADS */
-    const int THREADS = 2;
-	
-	pthread_t threads[THREADS];
+    pthread_create(temp_sensor_thread, NULL, (void *) temp_sensor, NULL);
 
-    pthread_create(&threads[1], NULL, temp_sensor(), NULL);
-    pthread_create(&threads[2], NULL, temp_sensor2(), NULL);
-
+    /* wait for thread to finish exicuting */
+    pthread_join(temp_sensor_thread, NULL);
+    pthread_join(car_init, NULL);
+    for (int i = 0; i < entrys_exits*2, i++)
+    {
+        pthread_join(boom_gate_entry_thread[i]);
+    }
 
     /* CLOSE SHARED MEMORY */
     if (munmap(sharedMem, shmSize) != 0) {
@@ -108,6 +129,7 @@ car_t *car_init(queue_t *entry_queue)
  * 1. create new car and add to queue
  * 2. sleep for 1 - 100ms
  */
+ 
 void *car_queuer(queue_t *entry_queue)
 {
     for(;;)
@@ -132,7 +154,7 @@ void *car_queuer(queue_t *entry_queue)
  * 6. sleep 10ms (boom gate closing)
  * 7. loop to top        
  */
-void *boom_gate(queue_t *entry_queue)
+void *boom_gate(boom_data_t data)
 {
     // loop infinately
     for(;;)
@@ -142,10 +164,13 @@ void *boom_gate(queue_t *entry_queue)
         usleep(10000); // open boom gate
 
         /* CREATE NEW CAR THREAD */
+        pthread_t car;
+        pthread_create(car, NULL, car_movement, NULL); // *** add car data ***
 
-        usleep(10000); // close boom gate
+        //usleep(10000); // close boom gate
     }
 }
+
 
 /**
  * Function to manage the simulation of car within carpark
@@ -171,20 +196,10 @@ void *car_movement(car_t car_data)
  */
 void *temp_sensor(void)
 {
-    for(int i = 0; i < 50; i++)
+    for(;;)
     {
         // update temp global value here
         printf("%d from 1\n", (rand() % 4) + 21);
         usleep(((rand() % 5) + 20) * 1000);
     }
 }
-void *temp_sensor2(void)
-{
-    for(int i = 0; i < 50; i++)
-    {
-        // update temp global value here
-        printf("%d from 2\n", (rand() % 4) + 21);
-        usleep(((rand() % 5) + 20) * 1000);
-    }
-}
-
