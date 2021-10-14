@@ -41,32 +41,22 @@ int main() {
 
     ftruncate(shm_fd, shmSize);
 
-    if ((sharedMem = mmap(0, shmSize, PROT_WRITE | PROT_READ, MAP_SHARED, shm_fd, 0)) == (shm *)-1)
+    if ((sharedMem = (shm *)mmap(0, shmSize, PROT_WRITE | PROT_READ, MAP_SHARED, shm_fd, 0)) == (void *)-1)
     {
         perror("mmap");
         return 1;
     }
     
-    sharedMem->lpr_entrance_1[0] = "1";
-    sharedMem->lpr_entrance_1[1] = "2";
-    sharedMem->lpr_entrance_1[2] = "3";
-    sharedMem->lpr_entrance_1[3] = "A";
-    sharedMem->lpr_entrance_1[4] = "B";
-    sharedMem->lpr_entrance_1[5] = "C";
+    sharedMem->lpr_entrance_1 = "rego";
 
-    printf("stored rego in lpr: ");
-    for (int i = 0; i < 6; i++)
-    {
-        printf("%s", sharedMem->lpr_entrance_1[i]);
-    }
-    printf("\n");
+    printf("%s\n", sharedMem->lpr_entrance_1);
 
     while(1){
         //until program is stopped by user - for testing
     }
     //close
     if (munmap(sharedMem, shmSize) != 0) {
-        perror("munmap() failed");
+        perror("munmap failed");
     }
 
     if (shm_unlink(key) != 0) {
