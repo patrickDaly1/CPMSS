@@ -46,8 +46,8 @@ int main() {
         perror("mmap");
         return 1;
     }
-    
-    sharedMem->lpr_entrance_1 = "rego";
+    strcpy(sharedMem->lpr_entrance_1, "rego");
+    // sharedMem->lpr_entrance_1 = "rego";
 
     printf("%s\n", sharedMem->lpr_entrance_1);
 
@@ -56,11 +56,11 @@ int main() {
     }
     //close
     if (munmap(sharedMem, shmSize) != 0) {
-        perror("munmap failed");
+        perror("munmap");
     }
 
     if (shm_unlink(key) != 0) {
-        perror("shm_unlink() failed");
+        perror("shm_unlink");
     }
 
 }

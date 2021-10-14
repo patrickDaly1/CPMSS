@@ -66,7 +66,7 @@ void parkingManager() {
 
 }
 
-int main() {
+int main(void) {
     //open the shared memory - PARKING (PARKING_TEST for test)
     int shm_fd;
     const char *key = "PARKING_TEST";
@@ -74,7 +74,7 @@ int main() {
     /*
      * Locate the segment.
      */
-    if ((shm_fd = shm_open(key, O_RDWR, 0666)) < 0)
+    if ((shm_fd = shm_open(key, O_RDWR, 0)) < 0)
     {
         perror("shm_open");
         return 1;
@@ -84,17 +84,24 @@ int main() {
      * Now attach segment to our data space.
      */
     size_t shmSize = 2920;
-    if ((sharedMem = (shm *)mmap(0, shmSize, PROT_WRITE | PROT_READ, MAP_SHARED, shm_fd, 0)) == (void *)-1)
+    if ((sharedMem = (shm *)mmap(0, shmSize, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0)) == (void *)-1)
     {
         perror("mmap");
         return 1;
     }
 
     //now read what was stored from temp
-    //printf("%s", sharedMem->lpr_entrance_1);
+    printf("%s", sharedMem->lpr_entrance_1);
     printf("\n");
 
-    
+    //close
+    if (munmap(sharedMem, shmSize) != 0) {
+        perror("munmap");
+    }
+
+    if (shm_unlink(key) != 0) {
+        perror("shm_unlink");
+    }
     //setup hash table
     /** Hash table values:
      * Rego (string) (key)
