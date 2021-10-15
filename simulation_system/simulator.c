@@ -18,8 +18,8 @@ queue_t *incarpark_queue = createQueue();
 queue_t *exit_queue = createQueue();
 
 void *temp_sensor(void);
-//car_t *car_init(queue_t entry_queue);
-//void car_queuer(queue_t entry_queue);
+car_t *car_init(void);
+void *car_queuer(void);
 
 int main(int argc, char argv)
 { 
@@ -48,17 +48,17 @@ int main(int argc, char argv)
     pthread_t boom_gate_entry_thread[entrys_exits], boom_gate_exit_thread[entrys_exits];
 
     /* INITIALISE CAR GENERATING THREAD */
-    pthread_create(car_init_thread, NULL, (void *) car_init, entry_queue); 
+    pthread_create(&car_init_thread, NULL, (void *) car_init, entry_queue); 
 
     /* INITIALISE BOOM GATE THREADS */
     
     for (int i = 0; i < entrys_exits; i++)
     {
-        pthread_create(boom_gate_entry_thread[i], NULL, (void *) boom_gate_entry, i);
+        pthread_create(&boom_gate_entry_thread[i], NULL, (void *) boom_gate_entry, i);
     }
 
     /* INITIALISE TEMP SENSOR THREADS */
-    pthread_create(temp_sensor_thread, NULL, (void *) temp_sensor, NULL);
+    pthread_create(&temp_sensor_thread, NULL, (void *) temp_sensor, NULL);
 
     /* wait for thread to finish exicuting */
     pthread_join(temp_sensor_thread, NULL);
@@ -97,7 +97,7 @@ car_t *car_init(void)
     new_car->entry = rand() % entrys_exits;
     for (;;)
     {
-        if(odds == 0)
+        if(odds == -1)
         {
             // choose from plates.txt file
         }
@@ -106,13 +106,16 @@ car_t *car_init(void)
             for(int i = 0; i < 3; i++)
             {
                 new_car->rego[i] = (char)((rand() % 26) + 65);
-                new_car->rego[i + 3] = (char)(rand() % 10);
+                new_car->rego[i + 3] = (rand() % 10) + '0';
             }
         }
 
         // check if car is already in list
-        if (!(find_car(entry_queue, new_car->rego)) || !(find_car(entry_queue, new_car->rego)) || 
-            !(find_car(entry_queue, new_car->rego)))
+        if (entry_queue->front == NULL)
+            return new_car;
+
+        else if (!(findCarRego(entry_queue, new_car->rego)) || !(findCarRego(entry_queue, new_car->rego)) || 
+            !(findCarRego(entry_queue, new_car->rego)))
             return new_car;
     }
 }
@@ -127,13 +130,15 @@ car_t *car_init(void)
  
 void *car_queuer(void)
 {
-    for(;;)
+    for(int i = 0; i < 50; i++)
     {
         // initialise new car and add to queue
-        addCar(entry_queue, car_init(entry_queue));
+        addCar(entry_queue, car_init());
         // sleep for 1 - 100 ms
         usleep(((rand() % 100) + 1) * 1000);    
     }
+
+    return NULL;
 }
 
 /** 
@@ -158,7 +163,7 @@ void *boom_gate_entry(int entry)
 
         usleep(2000); // wait for car
 
-        curr_car =  *findfirstCar(data->entry_queue, data->entry);
+        curr_car =  findFirstCarEntry(data->entry_queue, data->entry);
 
         // *** PASS REGO TO CORRECT LPR
 
@@ -202,7 +207,7 @@ void *boom_gate_exit(int exit)
 
         usleep(2000); // wait for car
 
-        curr_car =  *findfirstCar(entry_queue, exit); // *** add for if car isnt found ***
+        curr_car =  *findFirstCarExit(entry_queue, exit); // *** add for if car isnt found ***
 
         // *** PASS REGO TO CORRECT LPR
 

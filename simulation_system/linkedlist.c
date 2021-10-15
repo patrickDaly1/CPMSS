@@ -53,14 +53,14 @@ void removeCar(queue_t* q)
     free(temp);
 }
 
-bool findCarRego(queue_t* q, char rego[6])
+bool findCarRego(queue_t* q, char* rego)
 {
     node_t* temp;
     temp = q->front;
 
     while (temp != NULL)
     {
-        if (strcmp(*temp->car->rego, rego) == 0)
+        if (strcmp(temp->car->rego, rego) == 0)
         {
             return true;
         }
@@ -78,7 +78,7 @@ node_t* removeCarRego(node_t* head, car_t* car)
 
     while (current != NULL)
     {
-        if (strcmp(*current->car->rego, *car->rego) == 0)
+        if (strcmp(current->car->rego, car->rego) == 0)
         {
             node_t* newhead = head;
             if (previous == NULL) // first item in list
@@ -138,6 +138,6 @@ void printRego(node_t* head)
 {
     for (; head != NULL; head = head->next)
     {
-        printf("%s", *head->car->rego);
+        printf("%s\n", head->car->rego);
     }
 }

@@ -2,11 +2,17 @@
 #include <math.h>
 
 /**
+ * To - Do
+ * 
+ * remove function is not working properly at all
+ */
+
+/**
  * struct that holds relevant info for car 
  */
 typedef struct car 
 {
-    char *rego[6];
+    char rego[6];
     int parking;
     int entry;
     int exit;
@@ -38,10 +44,10 @@ void addCar(queue_t* q, car_t *car); // *** should this not be a queue_t ?? ***
 void removeCar(queue_t* q); 
 
 /* find if there exists a car with a given rego */
-bool findCarRego(queue_t* q, char rego[6]);
+bool findCarRego(queue_t* q, char *rego);
 
 /* remove car based on rego given */
-node_t removeCarRego(node_t* head, car_t* car);
+node_t* removeCarRego(node_t* head, car_t* car);
 
 /* return a car based on an entry number */
 car_t* findFirstCarEntry(queue_t* q, int entry);
