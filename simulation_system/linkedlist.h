@@ -32,17 +32,22 @@ struct node* newNode(car_t* car);
 struct queue* createQueue();
 
 /* add new car to the end of queue */
-void *addCar(struct queue* q, car_t *car); // *** should this not be a queue_t ?? ***
+void addCar(struct queue* q, car_t *car); // *** should this not be a queue_t ?? ***
 
 /* remove car from the front of the queue */
-void *removeCar(struct queue* q); // could we maybe change this to remove car based on rego given?
+void removeCar(struct queue* q); 
 
-/* find car in list given car rego */
-//TODO - IMPLEMENT
-// *** maybe have two find car functions one that finds based of rego 
-// other that finds first car in list with specified entry number ***
-//node_t *findCar(queue_t q, char *rego);
+/* find if there exists a car with a given rego */
+bool findCarRego(struct queue* q, char rego[6]);
 
+/* remove car based on rego given */
+node_t removeCarRego(node_t* head, car_t* car);
+
+/* return a car based on an entry number */
+car_t* findFirstCarEntry(struct queue* q, int entry);
+
+/* return a car based on an entry number */
+car_t* findFirstCarExit(struct queue* q, int exit);
 
 /**
  * prints rego of all the cars in linked list
