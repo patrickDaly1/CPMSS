@@ -13,11 +13,9 @@
 #define cars_per_level 20;
 
 pthread_mutex_t lock;
-typedef struct boom_data
-{
-    queue_t *entry_queue;
-    int entry;
-}boom_data_t;
+queue_t *entry_queue = createQueue();
+queue_t *incarpark_queue = createQueue();
+queue_t *exit_queue = createQueue();
 
 void *temp_sensor(void);
 //car_t *car_init(queue_t entry_queue);
@@ -50,15 +48,13 @@ int main(int argc, char argv)
     pthread_t boom_gate_entry_thread[entrys_exits], boom_gate_exit_thread[entrys_exits];
 
     /* INITIALISE CAR GENERATING THREAD */
-    pthread_create(car_init_thread, NULL, (void *) car_init, NULL); // *** upadate to have entry queue ***
+    pthread_create(car_init_thread, NULL, (void *) car_init, entry_queue); 
 
     /* INITIALISE BOOM GATE THREADS */
-    boom_data_t data;
-    data->entry_queue = NULL; // *** upadate to have entry queue ***
+    
     for (int i = 0; i < entrys_exits; i++)
     {
-        data->entry = i;
-        pthread_create(boom_gate_entry_thread[i], NULL, (void *) boom_gate, data);
+        pthread_create(boom_gate_entry_thread[i], NULL, (void *) boom_gate_entry, i);
     }
 
     /* INITIALISE TEMP SENSOR THREADS */
@@ -89,7 +85,7 @@ int main(int argc, char argv)
  *  a. ensure this rego is not currently assigned to a car *** FIGURE OUT HOW TO DO THIS ***
  * 2. assign random enterence for car to go to
  */
-car_t *car_init(queue_t *entry_queue)
+car_t *car_init(void)
 {
     // create new car structure
     car_t *new_car = (car_t *)malloc(sizeof(car_t));
@@ -115,10 +111,9 @@ car_t *car_init(queue_t *entry_queue)
         }
 
         // check if car is already in list
-        if (!(find_car(entry_queue, new_car->rego)))
-        {
+        if (!(find_car(entry_queue, new_car->rego)) || !(find_car(entry_queue, new_car->rego)) || 
+            !(find_car(entry_queue, new_car->rego)))
             return new_car;
-        }
     }
 }
 
@@ -130,7 +125,7 @@ car_t *car_init(queue_t *entry_queue)
  * 2. sleep for 1 - 100ms
  */
  
-void *car_queuer(queue_t *entry_queue)
+void *car_queuer(void)
 {
     for(;;)
     {
@@ -154,23 +149,66 @@ void *car_queuer(queue_t *entry_queue)
  * 6. sleep 10ms (boom gate closing)
  * 7. loop to top        
  */
-void *boom_gate(boom_data_t data)
+void *boom_gate_entry(int entry)
 {
     // loop infinately
     for(;;)
     {
+        car_t* curr_car;
+
         usleep(2000); // wait for car
-        
-        usleep(10000); // open boom gate
 
-        /* CREATE NEW CAR THREAD */
-        pthread_t car;
-        pthread_create(car, NULL, car_movement, NULL); // *** add car data ***
+        curr_car =  *findfirstCar(data->entry_queue, data->entry);
 
-        //usleep(10000); // close boom gate
+        // *** PASS REGO TO CORRECT LPR
+
+        if (/*rejected*/)
+        {
+            removeCar(data->entry_queue, curr_car->rego);
+        }
+        else if (/*accepted*/)
+        {
+            usleep(10000); // open boom gate
+
+            addCar(data->incarpark_queue, curr_car);
+            removeCar(data->entry_queue, curr_car->rego);
+
+            /* CREATE NEW CAR THREAD */
+            pthread_t car;
+            pthread_create(car, NULL, car_movement, curr_car); 
+
+            usleep(10000); // close boom gate
+        }
     }
 }
 
+/** 
+ * Function responsible for managing the entry of new cars
+ * 
+ * 1. sleep thread for (2ms) 
+ * 2. find first car from queue that corresponds to correct exit. 
+ * 3. read rego from car and update lpr for corresponding enterence and wait for manager response
+ * 4. sleep for 10ms (boom gate opening)
+ * 5. create new car thread and remove from queue
+ * 6. sleep 10ms (boom gate closing)
+ * 7. loop to top        
+ */
+void *boom_gate_exit(int exit)
+{
+    // loop infinately
+    for(;;)
+    {
+        car_t* curr_car;
+
+        usleep(2000); // wait for car
+
+        curr_car =  *findfirstCar(entry_queue, exit); // *** add for if car isnt found ***
+
+        // *** PASS REGO TO CORRECT LPR
+
+        removeCar(exit_queue, curr_car->rego);
+    }
+}
 
 /**
  * Function to manage the simulation of car within carpark
@@ -182,11 +220,18 @@ void *boom_gate(boom_data_t data)
  * 5. sleep for 10ms (traveling to random exit)
  * 6. trigger corresponding exit LRP
  */
-void *car_movement(car_t car_data)
+void *car_movement(car_t *aCar)
 {
     usleep(10000); // travel to parking
- 
+
     usleep(((rand() % 900) + 101) * 1000);
+
+    aCar->exit = rand() % entrys_exits;
+
+    usleep(10000); // travel to exit
+
+    addCar(exit_queue, addCar);
+    removeCar(incarpark_queue, aCar->rego);
 }
 
 /**
