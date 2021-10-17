@@ -9,7 +9,7 @@
 typedef struct item item_t;
 struct item
 {
-    char *rego; //key
+    char rego[6]; //key
     long timeEntered; //change to structs
     int levelParked;
     item_t *next;
@@ -93,7 +93,7 @@ bool htab_add(htab_t *h, char *rego, long timeEntered, int levelParked)
     {
         return false;
     }
-    newhead->rego = rego;
+    strcpy(newhead->rego, rego);
     newhead->timeEntered = timeEntered;
     newhead->levelParked = levelParked;
 
@@ -112,7 +112,7 @@ void htab_print(htab_t *h)
     printf("hash table with %lu buckets\n", h->size);
     for (size_t i = 0; i < h->size; ++i)
     {
-        printf("bucket %lu: ", i);
+        printf("bucket %lu: \n", i);
         if (h->buckets[i] == NULL)
         {
             printf("empty\n");

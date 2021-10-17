@@ -15,7 +15,7 @@
 #define NUM_ENTRANCES 5
 #define NUM_EXITS 5
 #define NUM_LEVELS 5
-#define NUM_CARS_PER_LEVEL 20;
+#define NUM_CARS_PER_LEVEL 20
 
 /** The Manager 
  * 
@@ -34,27 +34,38 @@
  */
 
 /**
- * What threads used? A. 1 thread per entramce and exit (might have threads for an exit/entrance incase of
+ * What threads used? A. 1 thread per entrance and exit (might have threads for an exit/entrance incase of
  * differing number of entrances/exits)
  */
 
 
 //Pass the shared memory and the rego hash table
 //A mini manager is what manages at maximum 1 exit and 1 entrance
-void miniManagerCreater() {
+void *miniManagerCreater() {
+    //thread function that checks the LPR sensors at an entrance and exit (either one)
+    //Will need the hasthable and shared memory
 
-}
+    //constantly check shared memory entrance LPR for regos - busy loop (with sleep) or what?
+    //if new rego in entrance LPR: 
+    //0. check if car park full - reject all cars until it isn't full
+    //1. if car park not full, check if included in hashmap (if not, reject - display on sign maybe?)
+    //2. if in hashmap, enter time in hashmap, display level number with available parks
+    //raise boom gate
+    //wait 20ms then close boom gate
 
-//pass the shared memory and rego hash table
-void displayStatus() {
-
+    //constantly check shared memory exit LPR for regos (same loop)
+    //if new rego in entrance LPR: 
+    //1. stop park time, calculate billing and save in billing.txt
+    //2. decrement car park capacity, increase revenue
+    //3. raise boom gate, wait 20ms, close boom gate
 }
 
 //pass shared memory and rego hasth table
 void parkingManager() {
-    //a single thread that manages car info after they've entered and before tehy exit
+    //a single thread that manages car info after they've entered and before they exit
 
-    //How to remember if car has entered that level before
+    //How to remember if car has entered that level before - mark its level parked as you go up (maybe) - 
+    //doesn't work if car can go back down to park. 
 
     //if car 'enteres a level' (first time LPR has read that car) and there is room on that level - 
     //change car level to that level.
@@ -67,55 +78,96 @@ void parkingManager() {
 
 }
 
-int main(void) {
-    //open the shared memory - key: PARKING (PARKING_TEST for test)
-    int shm_fd;
-    const char *key = "PARKING_TEST"; //change to "PARKING"
-    shm *sharedMem;
-    size_t shmSize = 2920;
-    //Locate the segment
-    if ((shm_fd = shm_open(key, O_RDWR, 0)) < 0)
-    {
-        perror("shm_open");
-        return 1;
-    }
-    //Now attach segment to our data space.
-    if ((sharedMem = (shm *)mmap(0, shmSize, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0)) == (void *)-1)
-    {
-        perror("mmap");
-        return 1;
-    }
+//pass the shared memory (maybe) and hash table
+void displayStatus() { //displayed every 50ms
+    //clear display - system("clear")
 
-    //now read what was stored from temp - test
-    // printf("%s", sharedMem->entrances[0].LPR.rego);
-    // printf("\n");
+    //display how full each level
 
-    //setup hash table
-    /** Hash table values:
-     * Rego (string) (key)
-     * timeEntered (clock_t - maybe)
-     * levelParked (int) */
-    
+    //current status of boom gates, signs, temperature sesors and alarms (shared memory)
 
+    //revenue car park has brought in ()
+}
 
     //Car park allocation: monotor LPR entrance sensors, when new rego read then check hash
     //table and add time entered then tell boom gate to open for a certain period of time then close again.
     
     //Note: when car parked on a level, if LPR on that level picks up same rego AGAIN - remember it's already 
     //parked so don't add as parked.
-    //Note: as car drives through the LPR sensors on ech level, if there is space on a level that it wasn't 
-    //told to park - add it as level parked until it finally reaches chooses one. 
+    //Note: as car drives through the LPR sensors on each level, if there is space on a level that it wasn't 
+    //told to park - add it as level parked until it finally chooses one. 
 
     //Car park deallocation: monitor LPR exit sensors, when rego read then the billing info is saved to file and
     //boom gate opens for certain time then closes. 
-
 
     //function: creates threads according to number of entrances/exits (account for differening number of 
     //entrances and exits)
 
     //function: display status of car park constantly (loop with sleep)
 
-    
+int main(void) {
+    //open the shared memory - key: PARKING (PARKING_TEST for test)
+    int shm_fd;
+    const char *key = "PARKING_TEST"; //change to "PARKING"
+    shm *sharedMem;
+    size_t shmSize = 2920;
+
+    //Locate the segment
+    if ((shm_fd = shm_open(key, O_RDWR, 0)) < 0)
+    {
+        perror("shm_open");
+        return 1;
+    }
+
+    //Attach segment to our data space.
+    if ((sharedMem = (shm *)mmap(0, shmSize, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0)) == (void *)-1)
+    {
+        perror("mmap");
+        return 1;
+    }
+
+    //setup hashtable
+    size_t buckets = 10;
+    htab_t h;
+    if (!htab_init(&h, buckets))
+    {
+        perror("failed to initialise hash table\n");
+        return 1;
+    }
+
+    //Setup file reader
+    FILE *fp;
+    size_t len = 10;
+    char *line;
+    size_t read;
+    if((fp = fopen("plates.txt", "r")) == NULL) {
+        perror("fopen\n");
+        return 1;
+    }
+    if((line = (char *)malloc(len * sizeof(char))) == NULL) {
+        perror("Unable to allocate buffer\n");
+        exit(2);
+    }
+
+    //Read plates.txt per line and store in hashtable
+    int level = 1;
+    while((read = getline(&line, &len, fp)) != -1) {
+        char copy[read];
+        strncpy(copy, line, read - 2);
+        htab_add(&h, copy, 0, level);
+        if(level >= 5) {    
+            level = 0;
+        } else {
+            ++level;
+        }
+    }
+    free(line);
+    fclose(fp);
+    htab_print(&h);
+
+    //allocate memory for capacity and billed money (cents) - maybe make struct for this
+
+
     //close
     if (munmap(sharedMem, shmSize) != 0) {
         perror("munmap");
