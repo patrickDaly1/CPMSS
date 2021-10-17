@@ -10,6 +10,7 @@
 #include "../shared_memory/sharedMemory.h"
 #include <sys/stat.h>
 #include <semaphore.h>
+#include <string.h>
 
 
 int main() {

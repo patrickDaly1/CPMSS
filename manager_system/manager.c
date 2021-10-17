@@ -10,6 +10,7 @@
 #include "../shared_memory/sharedMemory.h"
 #include <sys/stat.h>
 #include <semaphore.h>
+#include <string.h>
 
 #define NUM_ENTRANCES 5
 #define NUM_EXITS 5
@@ -72,17 +73,13 @@ int main(void) {
     const char *key = "PARKING_TEST"; //change to "PARKING"
     shm *sharedMem;
     size_t shmSize = 2920;
-    /*
-     * Locate the segment.
-     */
+    //Locate the segment
     if ((shm_fd = shm_open(key, O_RDWR, 0)) < 0)
     {
         perror("shm_open");
         return 1;
     }
-    /*
-     * Now attach segment to our data space.
-     */
+    //Now attach segment to our data space.
     if ((sharedMem = (shm *)mmap(0, shmSize, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0)) == (void *)-1)
     {
         perror("mmap");
@@ -93,20 +90,13 @@ int main(void) {
     // printf("%s", sharedMem->entrances[0].LPR.rego);
     // printf("\n");
 
-    //close
-    if (munmap(sharedMem, shmSize) != 0) {
-        perror("munmap");
-    }
-
-    if (shm_unlink(key) != 0) {
-        perror("shm_unlink");
-    }
     //setup hash table
     /** Hash table values:
      * Rego (string) (key)
      * timeEntered (clock_t - maybe)
-     * levelParked (int)
-    */
+     * levelParked (int) */
+    
+
 
     //Car park allocation: monotor LPR entrance sensors, when new rego read then check hash
     //table and add time entered then tell boom gate to open for a certain period of time then close again.
@@ -124,5 +114,15 @@ int main(void) {
     //entrances and exits)
 
     //function: display status of car park constantly (loop with sleep)
+
+    
+    //close
+    if (munmap(sharedMem, shmSize) != 0) {
+        perror("munmap");
+    }
+
+    if (shm_unlink(key) != 0) {
+        perror("shm_unlink");
+    }
     return 0;
 }

@@ -4,19 +4,20 @@
 #include <stdlib.h>   // for malloc(), free(), NULL
 #include <string.h>   // for strcmp()
 #include <time.h>
+#include <math.h>
 
 typedef struct item item_t;
 struct item
 {
     char *rego; //key
-    clock_t timeEntered; //change to structs
+    long timeEntered; //change to structs
     int levelParked;
     item_t *next;
 };
 
 void item_print(item_t *i)
 {
-    printf("Rego=%s timeEntered=%lu levelParked =%d", i->rego, i->timeEntered, i->levelParked);
+    printf("Rego=%s timeEntered=%03ld levelParked =%d\n", i->rego, i->timeEntered, i->levelParked);
 }
 
 // A hash table mapping a string to an integer.
@@ -83,8 +84,8 @@ item_t *htab_find(htab_t *h, char *rego)
 // Add a rego with value to the hash table.
 // pre: htab_find(h, rego) == NULL
 // post: (return == false AND allocation of new item failed)
-//       OR (htab_find(h, rego) != NULL)
-bool htab_add(htab_t *h, char *rego, clock_t timeEntered, int levelParked)
+//       OR (htab_find(h, rego) != NULL) 
+bool htab_add(htab_t *h, char *rego, long timeEntered, int levelParked)
 {
     // allocate new item
     item_t *newhead = (item_t *)malloc(sizeof(item_t));
@@ -126,7 +127,7 @@ void htab_print(htab_t *h)
                     printf(" -> ");
                 }
             }
-            printf("\n");
+            //printf("\n");
         }
     }
 }
@@ -196,7 +197,7 @@ void htab_destroy(htab_t *h)
 //         return EXIT_FAILURE;
 //     }
 
-//     // add items to hash table and preint
+//     // add items to hash table and print
 //     struct timespec start, stop;
 //     htab_add(&h, "123ABC", clock_gettime( CLOCK_REALTIME, &start), 2);
 //     htab_add(&h, "456JCD", clock_gettime( CLOCK_REALTIME, &start), 1); // violate pre-condition to get two hello's in table
