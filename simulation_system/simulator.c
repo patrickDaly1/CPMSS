@@ -27,7 +27,7 @@ int main(int argc, char argv)
     size_t shmSize = 2920;
     int shm_fd;
     shm *sharedMem;
-    const char *key = "PARKING_TEST";
+    const char *key = "PARKING";
 
     shm_fd = shm_open(key, O_CREAT | O_RDWR, 0666);
     if(shm_fd < 0) {
