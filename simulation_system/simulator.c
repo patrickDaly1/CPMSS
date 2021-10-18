@@ -21,9 +21,14 @@ int shm_fd;
 shm *sharedMem;
 const char *key = "PARKING";
 
-void *temp_sensor(void);
 car_t *car_init(void);
 void *car_queuer(void);
+void *boom_gate_entry(void *ptr);
+void *car_movement(void *aCar);
+void *boom_gate_exit(void *ptr);
+void *temp_sensor(void);
+
+pthread_mutex_t lock_queue;
 
 int main(int argc, char argv)
 { 
@@ -131,10 +136,12 @@ car_t *car_init(void)
  
 void *car_queuer(void)
 {
-    for(int i = 0; i < 10; i++)
+    for(int i = 0; i < 30; i++)
     {
         // initialise new car and add to queue
+        pthread_mutex_lock(&lock_queue)
         addCar(entry_queue, car_init());
+        pthread_mutex_unlock(&lock_queue);
         // sleep for 1 - 100 ms
         usleep(((rand() % 100) + 1) * 1000);    
     }
@@ -157,6 +164,7 @@ void *car_queuer(void)
  */
 void *boom_gate_entry(void *ptr)
 {
+    
     int entry = *((int *)ptr);
     //int entry = 2;
     //printf("%d @ 2\n", entry);
@@ -170,36 +178,48 @@ void *boom_gate_entry(void *ptr)
 
         curr_car =  findFirstCarEntry(entry_queue, entry);
         
-        if ((curr_car != NULL) && (exit_queue->front == NULL))
+        if ((curr_car != NULL) && (entry_queue->front != NULL))
         {
             // *** PASS REGO TO CORRECT LPR
             
             if (false)
             {
-                removeCarRego(entry_queue->front, curr_car);
+                entry_queue->front = removeCarRego(entry_queue->front, curr_car);
             }
             else if (true)
             {
-                //usleep(10000); // open boom gate
+                usleep(10000); // open boom gate
+                pthread_mutex_lock(sharedMem->entrances[entry]->BG->lock);
+                sharedMem->entrances[entry]->BG->status = "o";
+                pthread_mutex_unlock(sharedMem->entrances[entry]->BG->lock);
                 
+                pthread_mutex_lock(&lock_queue);
                 addCar(incarpark_queue, curr_car);
-                
-                removeCarRego(entry_queue->front, curr_car);
+                entry_queue->front = removeCarRego(entry_queue->front, curr_car);
+                pthread_mutex_unlock(&lock_queue);
+
+                pthread_mutex_lock(sharedMem->entrances[entry]->LPR->lock);
+                stpcpy(sharedMem->entrances[entry]->LPR->rego, curr_car->rego);
+                pthread_mutex_unlock(sharedMem->entrances[entry]->LPR->lock);
 
                 /* CREATE NEW CAR THREAD */
-                //pthread_t car;
-                //pthread_create(car, NULL, car_movement, curr_car); 
+                pthread_t car;
+                void * arg = malloc(sizeof(car_t));
+                arg = curr_car;
+                pthread_create(&car, NULL, (void*) car_movement, arg); 
                 
-                //usleep(10000); // close boom gate
-                
+                usleep(10000); // close boom gate
+
+                pthread_mutex_lock(sharedMem->entrances[entry]->BG->lock);
+                sharedMem->entrances[entry]->BG->status = "c";
+                pthread_mutex_unlock(sharedMem->entrances[entry]->BG->lock);               
             }
         }
         else // if no cars left in entry queue
-        {
-            
+        { 
             break;
         }
-        //printf("here @ %d\n", entry);
+        
     }
     return NULL;
 }
@@ -215,20 +235,45 @@ void *boom_gate_entry(void *ptr)
  * 6. sleep 10ms (boom gate closing)
  * 7. loop to top        
  */
-void *boom_gate_exit(int exit)
+void *boom_gate_exit(void *ptr)
 {
+    int exit = *((int *)ptr);
+    bool run_once = false;
+
     // loop infinately
     for(;;)
     {
         car_t* curr_car;
 
-        usleep(2000); // wait for car
+        usleep(2000); // wait for car+
+        curr_car =  findFirstCarEntry(exit_queue, exit);
 
-        curr_car =  *findFirstCarExit(entry_queue, exit); // *** add for if car isnt found ***
+        
+        if ((curr_car != NULL) && exit_queue->front != NULL)
+        {
+            // *** PASS REGO TO CORRECT LPR
+            usleep(10000); // open boom gate
+            pthread_mutex_lock(sharedMem->exits[exit]->BG->lock);
+            sharedMem->exits[exit]->BG->status = "o";
+            pthread_mutex_unlock(sharedMem->exits[exit]->BG->lock);
+            
+            pthread_mutex_lock(&lock_queue);
+            exit_queue->front = removeCarRego(exit_queue->front, curr_car);
+            pthread_mutex_unlock(&lock_queue);
 
-        // *** PASS REGO TO CORRECT LPR
-
-        removeCar(exit_queue, curr_car->rego);
+            pthread_mutex_lock(sharedMem->exits[exit]->LPR->lock);
+            stpcpy(sharedMem->exits[exit]->LPR->rego, curr_car->rego);
+            pthread_mutex_unlock(sharedMem->exits[exit]->LPR->lock);
+            
+            usleep(10000); // close boom gate    
+            pthread_mutex_lock(sharedMem->exits[exit]->BG->lock);
+            sharedMem->exits[exit]->BG->status = "c";
+            pthread_mutex_unlock(sharedMem->exits[exit]->BG->lock);  
+        }
+        else
+        {
+            break;
+        }
     }
 }
 
@@ -242,18 +287,24 @@ void *boom_gate_exit(int exit)
  * 5. sleep for 10ms (traveling to random exit)
  * 6. trigger corresponding exit LRP
  */
-void *car_movement(car_t *aCar)
+void *car_movement(void *aCar)
 {
+    
+    car_t* currCar= ((car_t *)aCar);
     usleep(10000); // travel to parking
 
     usleep(((rand() % 900) + 101) * 1000);
 
-    aCar->exit = rand() % entrys_exits;
+    currCar->exit = rand() % entrys_exits;
 
     usleep(10000); // travel to exit
 
-    addCar(exit_queue, addCar);
-    removeCar(incarpark_queue, aCar->rego);
+    pthread_mutex_lock(&lock_queue);
+    addCar(exit_queue, currCar);
+    incarpark_queue->front = removeCarRego(incarpark_queue->front, currCar);
+    pthread_mutex_unlock(&lock_queue);
+
+    return 0;
 }
 
 /**
