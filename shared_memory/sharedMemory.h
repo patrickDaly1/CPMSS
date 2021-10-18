@@ -48,8 +48,8 @@ typedef struct exit {
 typedef struct level {
     lpr_t LPR;
     boom_gate_t BG;
-    short tempSen1; //correct?
-    bool alarm1; //correct?
+    short tempSen1; //correct? ** think so **
+    bool alarm1; //correct? ** think so **
 } level_t;
 
 //Shared memory
