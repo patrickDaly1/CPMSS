@@ -147,17 +147,17 @@ void *boom_gate_entry(void *ptr)
             }
             else if (true)
             {
-                //usleep(10000); // open boom gate
+                usleep(10000); // open boom gate
                 
                 addCar(incarpark_queue, curr_car);
-                
+                printf("here @ %d\n", entry);
                 entry_queue->front = removeCarRego(entry_queue->front, curr_car);
 
                 /* CREATE NEW CAR THREAD */
                 //pthread_t car;
                 //pthread_create(car, NULL, car_movement, curr_car); 
                 
-                //usleep(10000); // close boom gate
+                usleep(10000); // close boom gate
                 
             }
         }
@@ -166,7 +166,7 @@ void *boom_gate_entry(void *ptr)
             
             break;
         }
-        //printf("here @ %d\n", entry);
+        
     }
     return NULL;
 }
