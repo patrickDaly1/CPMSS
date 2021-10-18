@@ -19,7 +19,13 @@ queue_t *exit_queue;
 pthread_mutex_t lock;
 pthread_mutex_t lock_queue;
 size_t shmSize = 2920;
+pthread_cond_t boom_gate_entry_signal[entrys_exits];
+pthread_mutex_t boom_gate_entry_lock[entrys_exits];
+pthread_cond_t boom_gate_exit_signal[entrys_exits];
+pthread_mutex_t boom_gate_exit_lock[entrys_exits];
 
+int boom_gate_entry_signaled[entrys_exits];
+int boom_gate_exit_signaled[entrys_exits];
 int shm_fd;
 shm *sharedMem;
 const char *key = "PARKING";
@@ -66,8 +72,8 @@ int main(int argc, char argv)
         pthread_cond_init(&boom_gate_exit_signal[i], NULL);
         pthread_mutex_init(&boom_gate_exit_lock[i], NULL);
 
-        boom_gate_entry_signaled[i] = false;
-        boom_gate_exit_signaled[i] = false;
+        boom_gate_entry_signaled[i] = 0;
+        boom_gate_exit_signaled[i] = 0;
     }
 
     /* INITIALISE CAR GENERATING THREAD */
@@ -153,7 +159,7 @@ car_t *car_init(void)
         // check if car is already in list
         if (entry_queue->front == NULL)
             // signal that new car has been added to specific entry
-            boom_gate_entry_signaled[new_car->entry] = true;
+            boom_gate_entry_signaled[new_car->entry] ++;
             pthread_mutex_lock(&boom_gate_entry_lock[new_car->entry]);
             pthread_cond_signal(&boom_gate_entry_signal[new_car->entry]);
             pthread_mutex_unlock(&boom_gate_entry_lock[new_car->entry]);
@@ -164,7 +170,7 @@ car_t *car_init(void)
             !(findCarRego(entry_queue, new_car->rego)))
         {
             // signal that new car has been added to specific entry
-            boom_gate_entry_signaled[new_car->entry] = true;
+            boom_gate_entry_signaled[new_car->entry] ++;
             pthread_mutex_lock(&boom_gate_entry_lock[new_car->entry]);
             pthread_cond_signal(&boom_gate_entry_signal[new_car->entry]);
             pthread_mutex_unlock(&boom_gate_entry_lock[new_car->entry]);
@@ -221,6 +227,13 @@ void *boom_gate_entry(void *ptr)
     for(;;)
     {
         car_t* curr_car;
+
+        // waits to be signaled that car is at entry
+        pthread_mutex_lock(&boom_gate_entry_lock[entry]);
+        while(boom_gate_entry_signaled[i] == 0)
+            pthread_cond_wait(&boom_gate_entry_signal[entry], &boom_gate_entry_lock[entry]);
+        pthread_mutex_unlock(&boom_gate_entry_lock[entry]);
+        boom_gate_entry_signaled[i] --;
 
         usleep(2000); // wait for car
 

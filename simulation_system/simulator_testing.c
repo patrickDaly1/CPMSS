@@ -169,7 +169,7 @@ car_t *car_init(void)
  
 void *car_queuer(void)
 {
-    for(int i = 0; i < 2000; i++)
+    for(int i = 0; i < 100; i++)
     {
         // initialise new car and add to queue
         addCar(entry_queue, car_init());
