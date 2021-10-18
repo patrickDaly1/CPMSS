@@ -165,7 +165,7 @@ void *boom_gate_entry(void *ptr)
 
         curr_car =  findFirstCarEntry(entry_queue, entry);
         
-        if ((curr_car != NULL) && (exit_queue->rear == NULL))
+        if ((curr_car != NULL) && (entry_queue->front != NULL))
         {
             // *** PASS REGO TO CORRECT LPR
             
@@ -216,8 +216,7 @@ void *boom_gate_exit(void *ptr)
         curr_car =  findFirstCarEntry(exit_queue, exit);
         //printf("%s\n", curr_car->rego);
 
-        if ((curr_car != NULL) && (exit_queue->front != NULL) && (entry_queue->front != NULL) &&
-        (incarpark_queue->front != NULL) && run_once)
+        if ((curr_car != NULL) && exit_queue != NULL && run_once)
         {
             
             // *** PASS REGO TO CORRECT LPR
