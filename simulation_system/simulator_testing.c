@@ -14,6 +14,7 @@
 car_t *car_init(void);
 void *car_queuer(void);
 void *boom_gate_entry(void *i);
+void *car_movement(car_t *aCar);
 
 queue_t *entry_queue;
 queue_t *incarpark_queue;
@@ -137,7 +138,7 @@ void *boom_gate_entry(void *ptr)
 
         curr_car =  findFirstCarEntry(entry_queue, entry);
         
-        if ((curr_car != NULL) && (exit_queue->front == NULL))
+        if ((curr_car != NULL) && (exit_queue->rear == NULL))
         {
             // *** PASS REGO TO CORRECT LPR
             
@@ -150,12 +151,12 @@ void *boom_gate_entry(void *ptr)
                 usleep(10000); // open boom gate
                 
                 addCar(incarpark_queue, curr_car);
-                printf("here @ %d\n", entry);
+                //printf("here @ %d\n", entry);
                 entry_queue->front = removeCarRego(entry_queue->front, curr_car);
 
                 /* CREATE NEW CAR THREAD */
-                //pthread_t car;
-                //pthread_create(car, NULL, car_movement, curr_car); 
+                pthread_t car;
+                pthread_create(car, NULL, (void*) car_movement, &curr_car); 
                 
                 usleep(10000); // close boom gate
                 
@@ -169,4 +170,21 @@ void *boom_gate_entry(void *ptr)
         
     }
     return NULL;
+}
+
+void *car_movement(void *aCar)
+{
+    car_t currCar= *((car_t *)aCar);
+    usleep(10000); // travel to parking
+
+    usleep(((rand() % 900) + 101) * 1000);
+
+    aCar->exit = rand() % entrys_exits;
+
+    usleep(10000); // travel to exit
+
+    addCar(exit_queue, addCar);
+    removeCarRego(incarpark_queue->front, currCar);
+
+    return 0;
 }

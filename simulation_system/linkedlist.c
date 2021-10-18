@@ -78,8 +78,6 @@ node_t* removeCarRego(node_t* head, car_t* car)
 
     while (current != NULL)
     {
-        if (q->rear == NULL)
-            return head;
 
         if (strcmp(current->car->rego, car->rego) == 0)
         {
@@ -87,7 +85,11 @@ node_t* removeCarRego(node_t* head, car_t* car)
             if (previous == NULL) // first item in list
                 newhead = current->next;
             else
+            {
+                if (current->next == NULL)
+                    return head;
                 previous->next = current->next;
+            }
 
             free(current);
             return newhead;
