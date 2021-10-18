@@ -28,7 +28,7 @@ struct node
 
 /* The queue, front stores the front node of LL and rear stores the last node of LL */
 typedef struct queue {
-    struct node* front, * rear;
+    struct node *front, *rear;
 }queue_t;
 
 /* A utility function to create a new linked list node. */
@@ -46,8 +46,10 @@ void removeCar(queue_t* q);
 /* find if there exists a car with a given rego */
 bool findCarRego(queue_t* q, char *rego);
 
+int listCount(queue_t* q);
+
 /* remove car based on rego given */
-node_t* removeCarRego(node_t* head, car_t* car);
+void removeCarRego(node_t** head, car_t* car);
 
 /* return a car based on an entry number */
 car_t* findFirstCarEntry(queue_t* q, int entry);

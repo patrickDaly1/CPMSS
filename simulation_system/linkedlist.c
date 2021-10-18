@@ -71,16 +71,61 @@ bool findCarRego(queue_t* q, char* rego)
     return false;
 }
 
-node_t* removeCarRego(node_t* head, car_t* car)
+int listCount(queue_t* q)
 {
+    int count = 0;
+
+    node_t* temp;
+    temp = q->front;
+
+    while (temp != NULL)
+    {
+        temp = temp->next;
+        count ++;
+    }
+
+    return count;
+}
+
+void removeCarRego(node_t** head, car_t* car)
+{
+
     node_t* previous = NULL;
-    node_t* current = head;
+    node_t* current = *head;
+
+    // if head contains item
+    if (current != NULL && (strcmp(current->car->rego, car->rego) == 0))
+    {
+        *head = current->next;
+        free(current);
+        return;
+    }
+
+    // search for first occurance of rego and remove it
+    while (current != NULL && (strcmp(current->car->rego, car->rego) != 0))
+    {
+        previous = current;
+        current = current->next;
+    }
+
+    // rego is not in list
+    if (current == NULL)
+        return;
+
+    // unlink node from list
+    previous->next = current->next;
+
+    free(current);
+
+    /*
 
     while (current != NULL)
     {
 
         if (strcmp(current->car->rego, car->rego) == 0)
         {
+
+            
             node_t* newhead = head;
             if (previous == NULL) // first item in list
                 newhead = current->next;
@@ -111,6 +156,7 @@ node_t* removeCarRego(node_t* head, car_t* car)
     }
 
     return head;
+    */
 }
 
 // q->start = removeCarRego(q, car);
