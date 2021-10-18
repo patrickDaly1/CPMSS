@@ -26,10 +26,9 @@ int main(int argc, char** argv)
     exit_queue = createQueue();
     
     pthread_t car_init_thread;
-    pthread_t boom_gate_entry_thread;
+    pthread_t boom_gate_entry_thread[entrys_exits];
 
     pthread_create(&car_init_thread, NULL, (void*) car_queuer, NULL);
-
     pthread_join(car_init_thread, NULL);
 
     printRego(entry_queue->front);
@@ -37,19 +36,24 @@ int main(int argc, char** argv)
     printRego(incarpark_queue->front);
     printf("--------------------------------------------------------------------\n");
     printRego(exit_queue->front);
-    printf("--------------------------------------------------------------------\n");
-    printf("--------------------------------------------------------------------\n");
+    printf("====================================================================\n");
 
-    pthread_create(&boom_gate_entry_thread, NULL, (void*) boom_gate_entry, NULL);
-    pthread_join(boom_gate_entry_thread, NULL);
+    int loc[entrys_exits];
+    for (int i = 0; i < entrys_exits; i++)
+    {
+        loc[i] = i;
+        pthread_create(&boom_gate_entry_thread[i], NULL, (void*) boom_gate_entry, &loc[i]);
+    }
+
+    for (int i = 0; i < entrys_exits; i++)
+        pthread_join(boom_gate_entry_thread[i], NULL);
 
     printRego(entry_queue->front);
     printf("--------------------------------------------------------------------\n");
     printRego(incarpark_queue->front);
     printf("--------------------------------------------------------------------\n");
     printRego(exit_queue->front);
-    printf("--------------------------------------------------------------------\n");
-    printf("--------------------------------------------------------------------\n");
+    printf("====================================================================\n");
 
     return 0;
 }
@@ -71,6 +75,7 @@ car_t *car_init(void)
 
     // create random probability of guarenteed entry
     new_car->entry = rand() % entrys_exits;
+    //printf("%d\n", new_car->entry);
     for (;;)
     {
         if(odds == -1)
@@ -117,10 +122,11 @@ void *car_queuer(void)
     return NULL;
 }
 
-void *boom_gate_entry(void *i)
+void *boom_gate_entry(void *ptr)
 {
-    //int entry = *(int *) i;
-    int entry = 2;
+    int entry = *((int *)ptr);
+    //int entry = 2;
+    //printf("%d @ 2\n", entry);
 
     // loop infinately
     for(;;)
@@ -137,29 +143,30 @@ void *boom_gate_entry(void *i)
             
             if (false)
             {
-                
                 removeCarRego(entry_queue->front, curr_car);
             }
             else if (true)
             {
-                usleep(10000); // open boom gate
+                //usleep(10000); // open boom gate
                 
                 addCar(incarpark_queue, curr_car);
                 
                 removeCarRego(entry_queue->front, curr_car);
-                
 
                 /* CREATE NEW CAR THREAD */
                 //pthread_t car;
                 //pthread_create(car, NULL, car_movement, curr_car); 
-
-                usleep(10000); // close boom gate
+                
+                //usleep(10000); // close boom gate
+                
             }
         }
         else // if no cars left in entry queue
         {
+            
             break;
         }
+        printf("here @ %d\n", entry);
     }
     return NULL;
 }

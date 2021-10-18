@@ -16,6 +16,10 @@ pthread_mutex_t lock;
 queue_t *entry_queue = createQueue();
 queue_t *incarpark_queue = createQueue();
 queue_t *exit_queue = createQueue();
+size_t shmSize = 2920;
+int shm_fd;
+shm *sharedMem;
+const char *key = "PARKING";
 
 void *temp_sensor(void);
 car_t *car_init(void);
@@ -24,10 +28,6 @@ void *car_queuer(void);
 int main(int argc, char argv)
 { 
     /* OPEN SHARED MEMORY */
-    size_t shmSize = 2920;
-    int shm_fd;
-    shm *sharedMem;
-    const char *key = "PARKING";
 
     shm_fd = shm_open(key, O_CREAT | O_RDWR, 0666);
     if(shm_fd < 0) {
@@ -95,6 +95,7 @@ car_t *car_init(void)
 
     // create random probability of guarenteed entry
     new_car->entry = rand() % entrys_exits;
+    //printf("%d\n", new_car->entry);
     for (;;)
     {
         if(odds == -1)
@@ -130,7 +131,7 @@ car_t *car_init(void)
  
 void *car_queuer(void)
 {
-    for(int i = 0; i < 50; i++)
+    for(int i = 0; i < 10; i++)
     {
         // initialise new car and add to queue
         addCar(entry_queue, car_init());
@@ -154,8 +155,12 @@ void *car_queuer(void)
  * 6. sleep 10ms (boom gate closing)
  * 7. loop to top        
  */
-void *boom_gate_entry(int entry)
+void *boom_gate_entry(void *ptr)
 {
+    int entry = *((int *)ptr);
+    //int entry = 2;
+    //printf("%d @ 2\n", entry);
+
     // loop infinately
     for(;;)
     {
@@ -163,28 +168,40 @@ void *boom_gate_entry(int entry)
 
         usleep(2000); // wait for car
 
-        curr_car =  findFirstCarEntry(data->entry_queue, data->entry);
-
-        // *** PASS REGO TO CORRECT LPR
-
-        if (/*rejected*/)
+        curr_car =  findFirstCarEntry(entry_queue, entry);
+        
+        if ((curr_car != NULL) && (exit_queue->front == NULL))
         {
-            removeCar(data->entry_queue, curr_car->rego);
+            // *** PASS REGO TO CORRECT LPR
+            
+            if (false)
+            {
+                removeCarRego(entry_queue->front, curr_car);
+            }
+            else if (true)
+            {
+                //usleep(10000); // open boom gate
+                
+                addCar(incarpark_queue, curr_car);
+                
+                removeCarRego(entry_queue->front, curr_car);
+
+                /* CREATE NEW CAR THREAD */
+                //pthread_t car;
+                //pthread_create(car, NULL, car_movement, curr_car); 
+                
+                //usleep(10000); // close boom gate
+                
+            }
         }
-        else if (/*accepted*/)
+        else // if no cars left in entry queue
         {
-            usleep(10000); // open boom gate
-
-            addCar(data->incarpark_queue, curr_car);
-            removeCar(data->entry_queue, curr_car->rego);
-
-            /* CREATE NEW CAR THREAD */
-            pthread_t car;
-            pthread_create(car, NULL, car_movement, curr_car); 
-
-            usleep(10000); // close boom gate
+            
+            break;
         }
+        //printf("here @ %d\n", entry);
     }
+    return NULL;
 }
 
 /** 
@@ -249,7 +266,10 @@ void *temp_sensor(void)
     for(;;)
     {
         // update temp global value here
-        printf("%d from 1\n", (rand() % 4) + 21);
+        //printf("%d from 1\n", (rand() % 4) + 21);
+        for(int i = 0; i < level; i++)
+            sharedMem->levels[i]->tempSens1 = (short)((rand() % 4) + 21);
+
         usleep(((rand() % 5) + 20) * 1000);
     }
 }
