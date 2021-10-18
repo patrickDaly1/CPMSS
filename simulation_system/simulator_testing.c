@@ -46,11 +46,11 @@ int main(int argc, char** argv)
     printRego(exit_queue->front);
     printf("====================================================================\n");
 
-    int loc1[entrys_exits];
+    int loc[entrys_exits];
     for (int i = 0; i < entrys_exits; i++)
     {
-        loc1[i] = i;
-        pthread_create(&boom_gate_entry_thread[i], NULL, (void*) boom_gate_entry, &loc1[i]);
+        loc[i] = i;
+        pthread_create(&boom_gate_entry_thread[i], NULL, (void*) boom_gate_entry, &loc[i]);
     }
 
     for (int i = 0; i < entrys_exits; i++)
@@ -61,15 +61,20 @@ int main(int argc, char** argv)
     printRego(incarpark_queue->front);
     printf("--------------------------------------------------------------------\n");
     printRego(exit_queue->front);
-    printf("====================================================================\n");
-
-    int loc2[entrys_exits];
+    printf("====================================================================\n");   
+    
+    usleep(1001000);
+    printf("--------------------------------------------------------------------\n");
+    printRego(incarpark_queue->front);
+    printf("--------------------------------------------------------------------\n");
+    printRego(exit_queue->front);
+    printf("====================================================================\n");   
+    
     for (int i = 0; i < entrys_exits; i++)
     {
-        loc2[i] = i;
-        pthread_create(&boom_gate_exit_thread[i], NULL, (void*) boom_gate_exit, &loc2[i]);
+        pthread_create(&boom_gate_exit_thread[i], NULL, (void*) boom_gate_exit, &loc[i]);
     }
-
+    
     for (int i = 0; i < entrys_exits; i++)
         pthread_join(boom_gate_exit_thread[i], NULL);
 
@@ -139,7 +144,7 @@ car_t *car_init(void)
  
 void *car_queuer(void)
 {
-    for(int i = 0; i < 10; i++)
+    for(int i = 0; i < 30; i++)
     {
         // initialise new car and add to queue
         addCar(entry_queue, car_init());
@@ -152,6 +157,7 @@ void *car_queuer(void)
 
 void *boom_gate_entry(void *ptr)
 {
+    
     int entry = *((int *)ptr);
     //int entry = 2;
     //printf("%d @ 2\n", entry);
@@ -211,27 +217,23 @@ void *boom_gate_exit(void *ptr)
     {
         car_t* curr_car;
 
-        usleep(2000); // wait for car
-        printf("here\n");
+        usleep(2000); // wait for car+
         curr_car =  findFirstCarEntry(exit_queue, exit);
-        //printf("%s\n", curr_car->rego);
 
-        if ((curr_car != NULL) && exit_queue != NULL && run_once)
+        
+        if ((curr_car != NULL) && exit_queue->front != NULL)
         {
-            
             // *** PASS REGO TO CORRECT LPR
             usleep(10000); // open boom gate
-
+            
             pthread_mutex_lock(&lock_queue);
             exit_queue->front = removeCarRego(exit_queue->front, curr_car);
             pthread_mutex_unlock(&lock_queue);
-
-            usleep(10000); // close boom gate
-            run_once = true;
+            
+            usleep(10000); // close boom gate      
         }
         else
         {
-            
             break;
         }
     }
