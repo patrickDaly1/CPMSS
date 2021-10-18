@@ -86,8 +86,19 @@ node_t* removeCarRego(node_t* head, car_t* car)
                 newhead = current->next;
             else
             {
-                if (current->next == NULL)
-                    return head;
+                if (current->next == NULL) // last item in list
+                    if (previous !=NULL)
+                    {
+                        free(current);
+                        previous->next = NULL;
+                        return previous;
+                    }
+                    else
+                    {
+                        free(current);
+                        return head;
+                    }
+                
                 previous->next = current->next;
             }
 
