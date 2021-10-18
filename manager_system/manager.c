@@ -54,26 +54,23 @@ void *miniManagerCreater() {
     //wait 20ms then close boom gate
 
     //constantly check shared memory exit LPR for regos (same loop)
-    //if new rego in entrance LPR: 
+    //if new rego in exit LPR: 
     //1. stop park time, calculate billing and save in billing.txt
-    //2. decrement car park capacity, increase revenue
+    //2. decrement previous level capacity, decrement car park capacity, increase revenue
     //3. raise boom gate, wait 20ms, close boom gate
+
+    //maybe sleep
 }
 
 //pass shared memory and rego hasth table
 void parkingManager() {
     //a single thread that manages car info after they've entered and before they exit
-
-    //How to remember if car has entered that level before - mark its level parked as you go up (maybe) - 
-    //doesn't work if car can go back down to park. 
-
-    //if car 'enteres a level' (first time LPR has read that car) and there is room on that level - 
-    //change car level to that level.
-
-    //'enteres a level' check: 
-    //1. if levelParked is less than the current level - parking on this level if room.
-    //2. if levelParked is greater than or equal to current level - leaving and don't alter parking space.
-    //Do we check if car went to top level and couldn't find a park to came back down?
+    
+    //levelParked just means level currently on (might be passing by)
+    
+    //if car enters a level, increment number of cars on level (even if full or more - can be assumed that 
+    //remaining are passing by looking for parks), decrease cars on previous level (even if full or more) 
+    //then allocate car to current level.
 
 
 }
