@@ -12,11 +12,14 @@
 #define levels 5;
 #define cars_per_level 20;
 
+
+queue_t *entry_queue;
+queue_t *incarpark_queue;
+queue_t *exit_queue;
 pthread_mutex_t lock;
-queue_t *entry_queue = createQueue();
-queue_t *incarpark_queue = createQueue();
-queue_t *exit_queue = createQueue();
+pthread_mutex_t lock_queue;
 size_t shmSize = 2920;
+
 int shm_fd;
 shm *sharedMem;
 const char *key = "PARKING";
@@ -28,12 +31,9 @@ void *car_movement(void *aCar);
 void *boom_gate_exit(void *ptr);
 void *temp_sensor(void);
 
-pthread_mutex_t lock_queue;
-
 int main(int argc, char argv)
 { 
     /* OPEN SHARED MEMORY */
-
     shm_fd = shm_open(key, O_CREAT | O_RDWR, 0666);
     if(shm_fd < 0) {
         perror("shm_open");
@@ -48,18 +48,42 @@ int main(int argc, char argv)
         return 1;
     }
 
+    entry_queue = createQueue();
+    incarpark_queue = createQueue();
+    exit_queue = createQueue();
+
     // set threads
-    pthread_t temp_sensor_thread, car_init_thread;
-    pthread_t boom_gate_entry_thread[entrys_exits], boom_gate_exit_thread[entrys_exits];
+    pthread_t temp_sensor_thread;
+    pthread_t car_init_thread;
+    pthread_t boom_gate_entry_thread[entrys_exits];
+    pthread_t boom_gate_exit_thread[entrys_exits];
 
-    /* INITIALISE CAR GENERATING THREAD */
-    pthread_create(&car_init_thread, NULL, (void *) car_init, entry_queue); 
-
-    /* INITIALISE BOOM GATE THREADS */
-    
+    pthread_mutex_init(&lock_queue, NULL);
     for (int i = 0; i < entrys_exits; i++)
     {
-        pthread_create(&boom_gate_entry_thread[i], NULL, (void *) boom_gate_entry, i);
+        pthread_cond_init(&boom_gate_entry_signal[i], NULL);
+        pthread_mutex_init(&boom_gate_entry_lock[i], NULL);
+        pthread_cond_init(&boom_gate_exit_signal[i], NULL);
+        pthread_mutex_init(&boom_gate_exit_lock[i], NULL);
+
+        boom_gate_entry_signaled[i] = false;
+        boom_gate_exit_signaled[i] = false;
+    }
+
+    /* INITIALISE CAR GENERATING THREAD */
+    pthread_create(&car_init_thread, NULL, (void*) car_queuer, NULL); 
+
+    /* INITIALISE BOOM GATE THREADS */
+    int loc[entrys_exits];
+    for (int i = 0; i < entrys_exits; i++)
+    {
+        loc[i] = i;
+        pthread_create(&boom_gate_entry_thread[i], NULL, (void*) boom_gate_entry, &loc[i]);
+    }
+
+    for (int i = 0; i < entrys_exits; i++)
+    {
+        pthread_create(&boom_gate_exit_thread[i], NULL, (void*) boom_gate_exit, &loc[i]);
     }
 
     /* INITIALISE TEMP SENSOR THREADS */
@@ -67,11 +91,12 @@ int main(int argc, char argv)
 
     /* wait for thread to finish exicuting */
     pthread_join(temp_sensor_thread, NULL);
-    pthread_join(car_init, NULL);
-    for (int i = 0; i < entrys_exits*2, i++)
-    {
-        pthread_join(boom_gate_entry_thread[i]);
-    }
+    pthread_join(car_init_thread, NULL);
+    for (int i = 0; i < entrys_exits; i++)
+        pthread_join(boom_gate_entry_thread[i], NULL);
+
+    for (int i = 0; i < entrys_exits; i++)
+        pthread_join(boom_gate_exit_thread[i], NULL);
 
     /* CLOSE SHARED MEMORY */
     if (munmap(sharedMem, shmSize) != 0) {
@@ -80,6 +105,15 @@ int main(int argc, char argv)
 
     if (shm_unlink(key) != 0) {
         perror("shm_unlink");
+    }
+
+    pthread_mutex_destroy(&lock_queue);
+    for (int i = 0; i < entrys_exits; i++)
+    {
+        pthread_cond_destroy(&boom_gate_entry_signal[i]);
+        pthread_mutex_destroy(&boom_gate_entry_lock[i]);
+        pthread_cond_destroy(&boom_gate_exit_signal[i]);
+        pthread_mutex_destroy(&boom_gate_exit_lock[i]);
     }
 }
 
@@ -118,11 +152,25 @@ car_t *car_init(void)
 
         // check if car is already in list
         if (entry_queue->front == NULL)
+            // signal that new car has been added to specific entry
+            boom_gate_entry_signaled[new_car->entry] = true;
+            pthread_mutex_lock(&boom_gate_entry_lock[new_car->entry]);
+            pthread_cond_signal(&boom_gate_entry_signal[new_car->entry]);
+            pthread_mutex_unlock(&boom_gate_entry_lock[new_car->entry]);
+
             return new_car;
 
         else if (!(findCarRego(entry_queue, new_car->rego)) || !(findCarRego(entry_queue, new_car->rego)) || 
             !(findCarRego(entry_queue, new_car->rego)))
+        {
+            // signal that new car has been added to specific entry
+            boom_gate_entry_signaled[new_car->entry] = true;
+            pthread_mutex_lock(&boom_gate_entry_lock[new_car->entry]);
+            pthread_cond_signal(&boom_gate_entry_signal[new_car->entry]);
+            pthread_mutex_unlock(&boom_gate_entry_lock[new_car->entry]);
+
             return new_car;
+        }
     }
 }
 

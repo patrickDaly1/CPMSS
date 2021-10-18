@@ -28,8 +28,8 @@ pthread_mutex_t boom_gate_entry_lock[entrys_exits];
 pthread_cond_t boom_gate_exit_signal[entrys_exits];
 pthread_mutex_t boom_gate_exit_lock[entrys_exits];
 
-bool boom_gate_entry_signaled[entrys_exits];
-bool boom_gate_exit_signaled[entrys_exits];
+int boom_gate_entry_signaled[entrys_exits];
+int boom_gate_exit_signaled[entrys_exits];
 
 
 int main(int argc, char** argv)
@@ -51,8 +51,8 @@ int main(int argc, char** argv)
         pthread_cond_init(&boom_gate_exit_signal[i], NULL);
         pthread_mutex_init(&boom_gate_exit_lock[i], NULL);
 
-        boom_gate_entry_signaled[i] = false;
-        boom_gate_exit_signaled[i] = false;
+        boom_gate_entry_signaled[i] = 0;
+        boom_gate_exit_signaled[i] = 0;
     }
 
     pthread_create(&car_init_thread, NULL, (void*) car_queuer, NULL);
@@ -137,7 +137,7 @@ car_t *car_init(void)
         if (entry_queue->front == NULL)
         {
             // signal that new car has been added to specific entry
-            boom_gate_entry_signaled[new_car->entry] = true;
+            boom_gate_entry_signaled[new_car->entry] ++;
             pthread_mutex_lock(&boom_gate_entry_lock[new_car->entry]);
             pthread_cond_signal(&boom_gate_entry_signal[new_car->entry]);
             pthread_mutex_unlock(&boom_gate_entry_lock[new_car->entry]);
@@ -149,7 +149,7 @@ car_t *car_init(void)
             !(findCarRego(entry_queue, new_car->rego)))
         {
             // signal that new car has been added to specific entry
-            boom_gate_entry_signaled[new_car->entry] = true;
+            boom_gate_entry_signaled[new_car->entry] ++;
             pthread_mutex_lock(&boom_gate_entry_lock[new_car->entry]);
             pthread_cond_signal(&boom_gate_entry_signal[new_car->entry]);
             pthread_mutex_unlock(&boom_gate_entry_lock[new_car->entry]);
@@ -195,7 +195,7 @@ void *boom_gate_entry(void *ptr)
 
         // waits to be signaled that car is at entry
         pthread_mutex_lock(&boom_gate_entry_lock[entry]);
-        while(!boom_gate_entry_signaled)
+        while(boom_gate_entry_signaled == 0)
             pthread_cond_wait(&boom_gate_entry_signal[entry], &boom_gate_entry_lock[entry]);
         pthread_mutex_unlock(&boom_gate_entry_lock[entry]);
 
@@ -252,7 +252,7 @@ void *boom_gate_exit(void *ptr)
 
         // waits to be signaled that car is at entry
         pthread_mutex_lock(&boom_gate_exit_lock[exit]);
-        while(!boom_gate_exit_signaled)
+        while(boom_gate_exit_signaled == 0)
             pthread_cond_wait(&boom_gate_exit_signal[exit], &boom_gate_exit_lock[exit]);
         pthread_mutex_unlock(&boom_gate_exit_lock[exit]);
 
@@ -297,7 +297,7 @@ void *car_movement(void *aCar)
     removeCarRego(&(incarpark_queue->front), currCar);
     pthread_mutex_unlock(&lock_queue);
 
-    boom_gate_exit_signaled[currCar->exit] = true;
+    boom_gate_exit_signaled[currCar->exit] ++;
     pthread_mutex_lock(&boom_gate_exit_lock[currCar->exit]);
     pthread_cond_signal(&boom_gate_exit_signal[currCar->exit]);
     pthread_mutex_unlock(&boom_gate_exit_lock[currCar->exit]);
