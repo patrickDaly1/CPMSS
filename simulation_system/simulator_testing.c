@@ -143,7 +143,7 @@ void *boom_gate_entry(void *ptr)
             
             if (false)
             {
-                removeCarRego(entry_queue->front, curr_car);
+                entry_queue->front = removeCarRego(entry_queue->front, curr_car);
             }
             else if (true)
             {
@@ -151,7 +151,7 @@ void *boom_gate_entry(void *ptr)
                 
                 addCar(incarpark_queue, curr_car);
                 
-                removeCarRego(entry_queue->front, curr_car);
+                entry_queue->front = removeCarRego(entry_queue->front, curr_car);
 
                 /* CREATE NEW CAR THREAD */
                 //pthread_t car;
@@ -166,7 +166,7 @@ void *boom_gate_entry(void *ptr)
             
             break;
         }
-        printf("here @ %d\n", entry);
+        //printf("here @ %d\n", entry);
     }
     return NULL;
 }
