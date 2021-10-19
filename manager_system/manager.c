@@ -17,8 +17,8 @@
 #define NUM_LEVELS 5
 #define NUM_CARS_PER_LEVEL 20
 
-typedef struct thread_mem thread_mem_t;
-struct thread_mem
+typedef struct mem mem_t;
+struct mem
 {
     //hashtable pointer
     htab_t *h;
@@ -32,6 +32,14 @@ struct thread_mem
     int billing;
 };
 
+typedef struct thread_mem thread_mem_t;
+struct thread_mem
+{
+    //main memory
+    mem_t *mem;
+    //LPR number
+    int lprNum;
+};
 /** The Manager 
  * 
  * To do:
@@ -48,17 +56,25 @@ struct thread_mem
  * current status of boom gates, signs, temperature sensors and alarms and current car park revenue
  */
 
-/**
- * What threads used? A. 1 thread per entrance and exit (might have threads for an exit/entrance incase of
- * differing number of entrances/exits)
- */
+void *miniManagerLevel(void *arg) {
+    thread_mem_t *info = (thread_mem_t *)arg;
+    //check level
+    return NULL;
+}
 
+void *miniManagerExit(void *arg) {
+    thread_mem_t *info = (thread_mem_t *)arg;
+    //constantly check shared memory exit LPR for regos (same loop)
+    //if new rego in exit LPR: 
+    //1. stop park time, calculate billing and save in billing.txt
+    //2. decrement previous level capacity, decrement car park capacity, increase revenue
+    //3. raise boom gate, wait 20ms, close boom gate
+    return NULL;
+}
 
-//Pass the shared memory and the rego hash table
-//A mini manager is what manages at maximum 1 exit and 1 entrance
-void *miniManagerCreater(void *arg) {
-    //thread function that checks the LPR sensors at an entrance and exit (either one)
-    //Will need the hasthable and shared memory
+void *miniManagerEntrance(void *arg) {
+    thread_mem_t *info = (thread_mem_t *)arg;
+    //thread function that checks the LPR sensors at an entrance
 
     //constantly check shared memory entrance LPR for regos - busy loop (with sleep) or what?
     //if new rego in entrance LPR: 
@@ -68,31 +84,11 @@ void *miniManagerCreater(void *arg) {
     //raise boom gate
     //wait 20ms then close boom gate
 
-    //constantly check shared memory exit LPR for regos (same loop)
-    //if new rego in exit LPR: 
-    //1. stop park time, calculate billing and save in billing.txt
-    //2. decrement previous level capacity, decrement car park capacity, increase revenue
-    //3. raise boom gate, wait 20ms, close boom gate
-
     //maybe sleep
     return NULL;
 }
 
-//pass shared memory and rego hasth table
-void parkingManager() {
-    //a single thread that manages car info after they've entered and before they exit
-    
-    //levelParked just means level currently on (might be passing by)
-    
-    //if car enters a level, increment number of cars on level (even if full or more - can be assumed that 
-    //remaining are passing by looking for parks), decrease cars on previous level (even if full or more) 
-    //then allocate car to current level.
-
-
-}
-
-//pass the shared memory (maybe) and hash table
-void displayStatus() { //displayed every 50ms
+void *displayStatus(void *arg) {
     //clear display - system("clear")
 
     //display how full each level
@@ -100,23 +96,10 @@ void displayStatus() { //displayed every 50ms
     //current status of boom gates, signs, temperature sesors and alarms (shared memory)
 
     //revenue car park has brought in ()
+
+    //sleep(50) //50ms sleep
+    return NULL;
 }
-
-    //Car park allocation: monotor LPR entrance sensors, when new rego read then check hash
-    //table and add time entered then tell boom gate to open for a certain period of time then close again.
-    
-    //Note: when car parked on a level, if LPR on that level picks up same rego AGAIN - remember it's already 
-    //parked so don't add as parked.
-    //Note: as car drives through the LPR sensors on each level, if there is space on a level that it wasn't 
-    //told to park - add it as level parked until it finally chooses one. 
-
-    //Car park deallocation: monitor LPR exit sensors, when rego read then the billing info is saved to file and
-    //boom gate opens for certain time then closes. 
-
-    //function: creates threads according to number of entrances/exits (account for differening number of 
-    //entrances and exits)
-
-    //function: display status of car park constantly (loop with sleep)
 
 int main(void) {
     //open the shared memory - key: PARKING (PARKING_TEST for test)
@@ -158,28 +141,57 @@ int main(void) {
         return 1;
     }
     if((line = (char *)malloc(len * sizeof(char))) == NULL) {
-        perror("Unable to allocate buffer\n");
+        perror("Unable to allocate memory for line\n");
         exit(2);
     }
 
     //Read plates.txt per line and store in hashtable
-    int level = 1;
-    while((read = getline(&line, &len, fp)) != -1) {
+    while((read = getline(&line, &len, fp)) != -1) { //function
         char copy[read];
         strncpy(copy, line, read - 2);
-        htab_add(&h, copy, 0, level);
-        if(level >= 5) {    
-            level = 0;
-        } else {
-            ++level;
-        }
+        htab_add(&h, copy, 0, 0);
     }
     free(line);
     fclose(fp);
-    htab_print(&h);
 
     //allocate memory for capacity and billed money (cents) - maybe make struct for this
-    thread_mem_t *threadInfo = (thread_mem_t *)malloc(sizeof(thread_mem_t));
+    mem_t *info = (mem_t *)malloc(sizeof(mem_t)); //function
+    info->billing = 0;
+    info->totalCap = 0;
+    for(int i = 0; i < NUM_LEVELS; ++i) {
+        info->levelCap[i] = 0;
+    }
+    info->h = &h;
+    info->sharedMem = sharedMem;
+    
+    //create threads
+    int total = NUM_ENTRANCES + NUM_EXITS + NUM_LEVELS;
+    pthread_t pid[total];
+    for(int i = 0; i < total; ++i) {
+        if(i < NUM_ENTRANCES) {
+            //entrance thread
+            thread_mem_t *threadInfo = (thread_mem_t *)malloc(sizeof(thread_mem_t));
+            threadInfo->mem = info;
+            threadInfo->lprNum = i + 1;
+            pthread_create(&pid[i], NULL, miniManagerEntrance, (void *)threadInfo);
+        } else if (i >= NUM_ENTRANCES && i < NUM_ENTRANCES + NUM_EXITS) {
+            //exit thread
+            thread_mem_t *threadInfo = (thread_mem_t *)malloc(sizeof(thread_mem_t));
+            threadInfo->mem = info;
+            threadInfo->lprNum = i + 1 - NUM_ENTRANCES;
+            pthread_create(&pid[i], NULL, miniManagerExit, (void *)threadInfo);
+        } else {
+            //level thread
+            thread_mem_t *threadInfo = (thread_mem_t *)malloc(sizeof(thread_mem_t));
+            threadInfo->mem = info;
+            threadInfo->lprNum = i + 1 - NUM_ENTRANCES - NUM_EXITS;
+            pthread_create(&pid[i], NULL, miniManagerLevel, (void *)threadInfo);
+        }
+    }
+    //wait till threads finish
+    for(int i = 0; i < total; ++i) {
+        pthread_join(pid[i], NULL);
+    }
 
     //close
     if (munmap(sharedMem, shmSize) != 0) {
@@ -189,6 +201,7 @@ int main(void) {
     if (shm_unlink(key) != 0) {
         perror("shm_unlink");
     }
-    free(threadInfo);
+    htab_destroy(&h);
+    free(info); //check if necessary or does thread do it?
     return 0;
 }
