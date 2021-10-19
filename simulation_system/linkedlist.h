@@ -55,7 +55,7 @@ void removeCarRego(node_t** head, car_t* car);
 car_t* findFirstCarEntry(queue_t* q, int entry);
 
 /* return a car based on an entry number */
-car_t* findFirstCarExit(queue_t* q, int exit);
+car_t* findFirstCarExit(queue_t** q, int exit);
 
 /**
  * prints rego of all the cars in linked list

@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include <sys/mman.h>
 #include <semaphore.h>
-#include "linkedlist.h"
+#include "linkedlist2.h"
 
 #define entrys_exits 5
 #define levels 5
@@ -17,9 +17,9 @@ void *boom_gate_entry(void *ptr);
 void *car_movement(void *aCar);
 void *boom_gate_exit(void *ptr);
 
-queue_t *entry_queue;
-queue_t *incarpark_queue;
-queue_t *exit_queue;
+struct Node* entryQueue = NULL;
+struct Node* inCarpark = NULL;
+struct Node* exitQueue = NULL;
 
 pthread_mutex_t lock_entry_queue;
 pthread_mutex_t lock_incarpark_queue;
@@ -38,10 +38,6 @@ int carsEntered, carsParked, carsExited, added;
 
 int main(int argc, char** argv)
 {
-    entry_queue = createQueue();
-    incarpark_queue = createQueue();
-    exit_queue = createQueue();
-
     carsEntered = 0;
     carsParked = 0;
     carsExited = 0;
@@ -85,6 +81,7 @@ int main(int argc, char** argv)
     }
 
     pthread_join(car_init_thread, NULL);
+
     
     for (int i = 0; i < entrys_exits; i++)
         pthread_join(boom_gate_entry_thread[i], NULL);
@@ -94,11 +91,11 @@ int main(int argc, char** argv)
 
 
     
-    printRego(entry_queue->front);
+    printList(entryQueue);
     printf("--------------------------------------------------------------------\n");
-    printRego(incarpark_queue->front);
+    printList(inCarpark);
     printf("--------------------------------------------------------------------\n");
-    printRego(exit_queue->front);
+    printList(exitQueue);
     printf("====================================================================\n");
 
     printf("%d %d %d %d \n",added, carsEntered, carsParked, carsExited);
@@ -153,7 +150,7 @@ car_t *car_init(void)
         }
 
         // check if car is already in list
-        if (entry_queue->front == NULL)
+        if (entryQueue == NULL)
         {
             // signal that new car has been added to specific entry
             boom_gate_entry_signaled[new_car->entry] = true;;
@@ -164,8 +161,8 @@ car_t *car_init(void)
             return new_car;
         }
 
-        else if (!(findCarRego(entry_queue, new_car->rego)) || !(findCarRego(entry_queue, new_car->rego)) || 
-            !(findCarRego(entry_queue, new_car->rego)))
+        else if (!(search(entryQueue, new_car->rego)) || !(search(inCarpark, new_car->rego)) || 
+            !(search(exitQueue, new_car->rego)))
         {
             // signal that new car has been added to specific entry
             boom_gate_entry_signaled[new_car->entry] = true;
@@ -188,14 +185,14 @@ car_t *car_init(void)
  
 void *car_queuer(void)
 {
-    for(int i = 0; i < 10; i++)
+    for(int i = 0; i < 100; i++)
     {
         // initialise new car and add to queue
         pthread_mutex_lock(&lock_entry_queue);
-        addCar(entry_queue, car_init());
+        append(&entryQueue, car_init());
         added++;
         pthread_mutex_unlock(&lock_entry_queue);
-        printf("entry: %d, carpark: %d, exit: %d\n", listCount(entry_queue), listCount(incarpark_queue), listCount(exit_queue));
+        printf("entry: %d, carpark: %d, exit: %d\n", listCount(entryQueue), listCount(inCarpark), listCount(exitQueue));
         // sleep for 1 - 100 ms
         usleep(((rand() % 100) + 1) * 1000);    
     }
@@ -223,7 +220,7 @@ void *boom_gate_entry(void *ptr)
 
         usleep(2000); // wait for car
 
-        curr_car =  findFirstCarEntry(entry_queue, entry);
+        curr_car =  searchEntry(entryQueue, entry);
         
         if ((curr_car != NULL))
         {
@@ -231,19 +228,18 @@ void *boom_gate_entry(void *ptr)
             
             if (false)
             {
-                removeCarRego(&(entry_queue->front), curr_car);
+                deleteNode(&entryQueue, curr_car->rego);
             }
             else if (true)
             {
                 usleep(10000); // open boom gate
-                printf("nhrere\n");
                 
                 pthread_mutex_lock(&lock_entry_queue);
-                addCar(incarpark_queue, curr_car);
-                removeCarRego(&(entry_queue->front), curr_car);
+                append(&inCarpark, curr_car);
+                deleteNode(&entryQueue, curr_car->rego);
                 carsEntered++;
                 pthread_mutex_unlock(&lock_entry_queue);
-                printf("entry: %d, carpark: %d, exit: %d\n", listCount(entry_queue), listCount(incarpark_queue), listCount(exit_queue));
+                printf("entry: %d, carpark: %d, exit: %d\n", listCount(entryQueue), listCount(inCarpark), listCount(exitQueue));
 
                 /* CREATE NEW CAR THREAD */
                 pthread_t car;
@@ -255,8 +251,7 @@ void *boom_gate_entry(void *ptr)
                 
             }
         }
-        if ((entry_queue->front == NULL) && (incarpark_queue->front == NULL) && 
-            (exit_queue->front == NULL))
+        if ((entryQueue == NULL) && (inCarpark == NULL))
         { 
             break;
         }
@@ -283,7 +278,7 @@ void *boom_gate_exit(void *ptr)
 
         usleep(2000); // wait for car+
         pthread_mutex_lock(&lock_entry_queue);
-        curr_car =  findFirstCarExit(&exit_queue, exit);
+        curr_car =  searchExit(exitQueue, exit);;
         pthread_mutex_unlock(&lock_entry_queue);
         
         if (curr_car != NULL)
@@ -293,18 +288,16 @@ void *boom_gate_exit(void *ptr)
             
             
             pthread_mutex_lock(&lock_entry_queue);
-            removeCarRego(&(exit_queue->front), curr_car);
+            deleteNode(&exitQueue, curr_car->rego);
             carsExited++;
             pthread_mutex_unlock(&lock_entry_queue);
-            printf("%d %d %d \n", carsEntered, carsParked, carsExited);
-            printf("entry: %d, carpark: %d, exit: %d\n", listCount(entry_queue), listCount(incarpark_queue), listCount(exit_queue));
+            //printf("%d %d %d \n", carsEntered, carsParked, carsExited);
+            printf("entry: %d, carpark: %d, exit: %d\n", listCount(entryQueue), listCount(inCarpark), listCount(exitQueue));
             
             usleep(10000); // close boom gate     
+
         }
-
-
-        if ((entry_queue->front == NULL) && (incarpark_queue->front == NULL) && 
-            (exit_queue->front == NULL))
+        if (100 == carsExited)
         {
             break;
         }
@@ -324,17 +317,17 @@ void *car_movement(void *aCar)
     usleep(10000); // travel to exit
 
     pthread_mutex_lock(&lock_entry_queue);
-    //printf("%s\n",currCar->rego);
-    addCar(exit_queue, currCar);
-    removeCarRego(&(incarpark_queue->front), currCar);
+    append(&exitQueue, currCar);
+    deleteNode(&inCarpark, currCar->rego);
     carsParked++;
     pthread_mutex_unlock(&lock_entry_queue);
-    printf("entry: %d, carpark: %d, exit: %d\n", listCount(entry_queue), listCount(incarpark_queue), listCount(exit_queue));
+    printf("entry: %d, carpark: %d, exit: %d\n", listCount(entryQueue), listCount(inCarpark), listCount(exitQueue));
     
-    boom_gate_exit_signaled[currCar->exit] = false;
+    boom_gate_exit_signaled[currCar->exit] = true;
     pthread_mutex_lock(&boom_gate_exit_lock[currCar->exit]);
     pthread_cond_signal(&boom_gate_exit_signal[currCar->exit]);
     pthread_mutex_unlock(&boom_gate_exit_lock[currCar->exit]);
+    
 
     return 0;
 }

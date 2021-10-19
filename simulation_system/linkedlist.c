@@ -21,6 +21,7 @@ queue_t* createQueue()
 
 void addCar(queue_t* q, car_t* car)
 {
+    
     // Create a new LL node
     node_t* temp = newNode(car);
 
@@ -179,10 +180,10 @@ car_t* findFirstCarEntry(queue_t* q, int entry)
     return NULL;
 }
 
-car_t* findFirstCarExit(queue_t* q, int exit)
+car_t* findFirstCarExit(queue_t** q, int exit)
 {
     node_t* temp;
-    temp = q->front;
+    temp = (*q)->front;
 
     while (temp != NULL)
     {
