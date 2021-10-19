@@ -58,12 +58,14 @@ struct thread_mem
 
 void *miniManagerLevel(void *arg) {
     thread_mem_t *info = (thread_mem_t *)arg;
+    printf("At level\n");
     //check level
     return NULL;
 }
 
 void *miniManagerExit(void *arg) {
     thread_mem_t *info = (thread_mem_t *)arg;
+    printf("At exit\n");
     //constantly check shared memory exit LPR for regos (same loop)
     //if new rego in exit LPR: 
     //1. stop park time, calculate billing and save in billing.txt
@@ -75,16 +77,30 @@ void *miniManagerExit(void *arg) {
 void *miniManagerEntrance(void *arg) {
     thread_mem_t *info = (thread_mem_t *)arg;
     //thread function that checks the LPR sensors at an entrance
+    //constantly check shared memory entrance LPR for regos
+    while(1) {
+        //Check allocated lpr - use condition variable and mutex before accesing it. Wait for it to change
+        pthread_mutex_lock(&(info->mem->sharedMem->entrances[0].LPR.lock));
+        pthread_cond_wait(&(info->mem->sharedMem->entrances[0].LPR.condition), &(info->mem->sharedMem->entrances->LPR.lock));
+        pthread_mutex_unlock(&(info->mem->sharedMem->entrances[0].LPR.lock));
+        //Check if rego in list (and check if aready allocated incase accidentally re-read value)
+        printf("At entrance\n");
+        //If not in list, set sign to 'x'
 
-    //constantly check shared memory entrance LPR for regos - busy loop (with sleep) or what?
+        //If already allocated, ignore
+
+        //Else all good, initialise time entered, find level that a park is free, display level number
+        
+        //Raise boom gates for 20ms (check), then close boom gates
+
+
+    }
     //if new rego in entrance LPR: 
     //0. check if car park full - reject all cars until it isn't full
     //1. if car park not full, check if included in hashmap (if not, reject - display on sign maybe?)
     //2. if in hashmap, enter time in hashmap, display level number with available parks
     //raise boom gate
     //wait 20ms then close boom gate
-
-    //maybe sleep
     return NULL;
 }
 

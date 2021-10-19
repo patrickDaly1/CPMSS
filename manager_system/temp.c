@@ -48,13 +48,35 @@ int main() {
         return 1;
     }
     strcpy(sharedMem->entrances[0].LPR.rego, "rego");
-    // sharedMem->lpr_entrance_1 = "rego";
-
     printf("%s\n", sharedMem->entrances[0].LPR.rego);
 
-    while(1){
-        //until program is stopped by user - for testing
+    //set attributes for mutex and condition variables to PTHREAD_PROCESS_SHARED
+    pthread_mutexattr_t mattr;
+    pthread_mutexattr_init(&mattr);
+    pthread_mutexattr_setpshared(&mattr, PTHREAD_PROCESS_SHARED);
+    pthread_condattr_t cattr;
+    pthread_condattr_init(&cattr);
+    pthread_condattr_setpshared(&cattr, PTHREAD_PROCESS_SHARED);
+    //initialise mutex and condition variables 
+    pthread_mutex_init(&(sharedMem->entrances[0].LPR.lock), &mattr);
+    pthread_cond_init(&(sharedMem->entrances[0].LPR.condition), &cattr);
+
+    sleep(10);
+    //signal change to rego
+    pthread_mutex_lock(&(sharedMem->entrances[0].LPR.lock));
+    pthread_cond_signal(&(sharedMem->entrances[0].LPR.condition));
+    pthread_mutex_unlock(&(sharedMem->entrances[0].LPR.lock));
+
+    sleep(2);
+    pthread_mutex_lock(&(sharedMem->entrances[0].LPR.lock));
+    pthread_cond_signal(&(sharedMem->entrances[0].LPR.condition));
+    pthread_mutex_unlock(&(sharedMem->entrances[0].LPR.lock));
+    
+    printf("Here mate\n");
+    while(1) {
+
     }
+
     //close
     if (munmap(sharedMem, shmSize) != 0) {
         perror("munmap");
@@ -64,4 +86,11 @@ int main() {
         perror("shm_unlink");
     }
 
+    pthread_mutex_destroy(&(sharedMem->entrances[0].LPR.lock));
+    pthread_mutexattr_destroy(&mattr);
+    
+    pthread_cond_destroy(&(sharedMem->entrances[0].LPR.condition));
+    pthread_condattr_destroy(&cattr);
+
+    return 0;
 }
