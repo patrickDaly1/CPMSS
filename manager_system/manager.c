@@ -17,6 +17,21 @@
 #define NUM_LEVELS 5
 #define NUM_CARS_PER_LEVEL 20
 
+typedef struct thread_mem thread_mem_t;
+struct thread_mem
+{
+    //hashtable pointer
+    htab_t *h;
+    //shared memory pointer
+    shm *sharedMem;
+    //level capacity array
+    int levelCap[NUM_LEVELS];
+    //total capacity
+    int totalCap;
+    //total billing (cents)
+    int billing;
+};
+
 /** The Manager 
  * 
  * To do:
@@ -41,7 +56,7 @@
 
 //Pass the shared memory and the rego hash table
 //A mini manager is what manages at maximum 1 exit and 1 entrance
-void *miniManagerCreater() {
+void *miniManagerCreater(void *arg) {
     //thread function that checks the LPR sensors at an entrance and exit (either one)
     //Will need the hasthable and shared memory
 
@@ -60,6 +75,7 @@ void *miniManagerCreater() {
     //3. raise boom gate, wait 20ms, close boom gate
 
     //maybe sleep
+    return NULL;
 }
 
 //pass shared memory and rego hasth table
@@ -163,7 +179,7 @@ int main(void) {
     htab_print(&h);
 
     //allocate memory for capacity and billed money (cents) - maybe make struct for this
-
+    thread_mem_t *threadInfo = (thread_mem_t *)malloc(sizeof(thread_mem_t));
 
     //close
     if (munmap(sharedMem, shmSize) != 0) {
@@ -173,5 +189,6 @@ int main(void) {
     if (shm_unlink(key) != 0) {
         perror("shm_unlink");
     }
+    free(threadInfo);
     return 0;
 }
