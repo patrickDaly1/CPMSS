@@ -40,6 +40,10 @@ struct thread_mem
     //LPR number
     int lprNum;
 };
+
+//mutex for memory (mem_t)
+pthread_mutex_t mem_lock;
+
 /** The Manager 
  * 
  * To do:
@@ -73,16 +77,34 @@ long getTimeMilli() {
     return ms + s;
 }
 
+int findFreeLevel(mem_t *mem) {
+    //lock mutex
+    pthread_mutex_lock(&mem_lock);
+    //Check total capacity
+    if(mem->totalCap >= NUM_CARS_PER_LEVEL * NUM_LEVELS) {
+        return 0;
+    }
+    //iterate over capacities to find lowest
+    int lowestLvl = 0;
+    for(int i = 1; i < NUM_CARS_PER_LEVEL; ++i) {
+        if(mem->levelCap[lowestLvl] > mem->levelCap[i]) {
+            lowestLvl = i;
+        }
+    }
+    //unlock mutex
+    pthread_mutex_unlock(&mem_lock);
+    return lowestLvl;
+}
+
 void *miniManagerLevel(void *arg) {
     thread_mem_t *info = (thread_mem_t *)arg;
-    printf("At level\n");
+
     //check level
     return NULL;
 }
 
 void *miniManagerExit(void *arg) {
     thread_mem_t *info = (thread_mem_t *)arg;
-    printf("At exit\n");
     //constantly check shared memory exit LPR for regos (same loop)
     //if new rego in exit LPR: 
     //1. stop park time, calculate billing and save in billing.txt
@@ -93,7 +115,6 @@ void *miniManagerExit(void *arg) {
 
 void *miniManagerEntrance(void *arg) {
     thread_mem_t *info = (thread_mem_t *)arg;
-    //thread function that checks the LPR sensors at an entrance
     //constantly check shared memory entrance LPR for regos
     // int lprNum = info->lprNum;
     int lprNum = 0;
@@ -148,6 +169,12 @@ void *displayStatus(void *arg) {
 }
 
 int main(void) {
+    //initialise main memory mutex
+    if (pthread_mutex_init(&mem_lock, NULL) != 0)
+    {
+        perror("main memory mutex\n");
+        return 1;
+    }
     //open the shared memory - key: PARKING (PARKING_TEST for test)
     int shm_fd;
     const char *key = "PARKING_TEST"; //change to "PARKING"
@@ -249,5 +276,6 @@ int main(void) {
     }
     htab_destroy(&h);
     free(info); //check if necessary or does thread do it?
+    //free thread info memory - iterate
     return 0;
 }
