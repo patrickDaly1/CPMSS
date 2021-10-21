@@ -183,6 +183,14 @@ void htab_destroy(htab_t *h)
     h->size = 0;
 }
 
+void htab_change_time(htab_t *h, char *rego, long time) {
+    item_t *i = htab_find(h, rego);
+    if(i != NULL) {
+        //found, change time
+        i->timeEntered = time;
+    }
+}
+
 // TESTER FUNCTION
 
 // int main(int argc, char **argv)

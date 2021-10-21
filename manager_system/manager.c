@@ -25,11 +25,11 @@ struct mem
     //shared memory pointer
     shm *sharedMem;
     //level capacity array
-    int levelCap[NUM_LEVELS];
+    int levelCap[NUM_LEVELS]; //check updates
     //total capacity
-    int totalCap;
+    int totalCap; //check updates
     //total billing (cents)
-    int billing;
+    int billing; //check updates
 };
 
 typedef struct thread_mem thread_mem_t;
@@ -56,6 +56,23 @@ struct thread_mem
  * current status of boom gates, signs, temperature sensors and alarms and current car park revenue
  */
 
+long getTimeMilli() {
+    long ms; // Milliseconds
+    long s;  // Seconds
+    struct timespec spec;
+
+    if(clock_gettime(CLOCK_MONOTONIC, &spec) < 0) {
+        //issue setting up time
+        perror("clock_gettime\n");
+        exit(1);
+    }
+
+    s  = spec.tv_sec * 1.0e3; // convert to milliseconds
+    ms = spec.tv_nsec / 1.0e6; // convert nanoseconds to milliseconds
+
+    return ms + s;
+}
+
 void *miniManagerLevel(void *arg) {
     thread_mem_t *info = (thread_mem_t *)arg;
     printf("At level\n");
@@ -78,18 +95,31 @@ void *miniManagerEntrance(void *arg) {
     thread_mem_t *info = (thread_mem_t *)arg;
     //thread function that checks the LPR sensors at an entrance
     //constantly check shared memory entrance LPR for regos
+    // int lprNum = info->lprNum;
+    int lprNum = 0;
+    shm *sharedMem = info->mem->sharedMem;
     while(1) {
         //Check allocated lpr - use condition variable and mutex before accesing it. Wait for it to change
-        pthread_mutex_lock(&(info->mem->sharedMem->entrances[0].LPR.lock));
-        pthread_cond_wait(&(info->mem->sharedMem->entrances[0].LPR.condition), &(info->mem->sharedMem->entrances->LPR.lock));
-        pthread_mutex_unlock(&(info->mem->sharedMem->entrances[0].LPR.lock));
+        pthread_mutex_lock(&(sharedMem->entrances[lprNum].LPR.lock));
+        pthread_cond_wait(&(sharedMem->entrances[lprNum].LPR.condition), &(sharedMem->entrances[lprNum].LPR.lock));
+        pthread_mutex_unlock(&(sharedMem->entrances[lprNum].LPR.lock));
         //Check if rego in list (and check if aready allocated incase accidentally re-read value)
-        printf("At entrance\n");
-        //If not in list, set sign to 'x'
+        if(htab_find(info->mem->h, sharedMem->entrances[lprNum].LPR.rego) == NULL) {
+            //doesn't exist in list - set sign to 'x' and signal change
+            pthread_mutex_lock(&(sharedMem->entrances[0].SIGN.lock));
+            sharedMem->entrances[0].SIGN.display = 'x';
+            pthread_mutex_unlock(&(sharedMem->entrances[0].SIGN.lock));
 
-        //If already allocated, ignore
+            pthread_mutex_lock(&(sharedMem->entrances[0].SIGN.lock));
+            pthread_cond_signal(&(sharedMem->entrances[0].SIGN.condition));
+            pthread_mutex_unlock(&(sharedMem->entrances[0].SIGN.lock));
+        } else {
+            //exists in list
+            //If already allocated, ignore
+            //Else all good, initialise time entered, find level that a park is free, display level number
+            htab_change_time(info->mem->h, sharedMem->entrances[lprNum].LPR.rego, getTimeMilli());
 
-        //Else all good, initialise time entered, find level that a park is free, display level number
+        }
         
         //Raise boom gates for 20ms (check), then close boom gates
 
@@ -188,19 +218,19 @@ int main(void) {
             //entrance thread
             thread_mem_t *threadInfo = (thread_mem_t *)malloc(sizeof(thread_mem_t));
             threadInfo->mem = info;
-            threadInfo->lprNum = i + 1;
+            threadInfo->lprNum = i;
             pthread_create(&pid[i], NULL, miniManagerEntrance, (void *)threadInfo);
         } else if (i >= NUM_ENTRANCES && i < NUM_ENTRANCES + NUM_EXITS) {
             //exit thread
             thread_mem_t *threadInfo = (thread_mem_t *)malloc(sizeof(thread_mem_t));
             threadInfo->mem = info;
-            threadInfo->lprNum = i + 1 - NUM_ENTRANCES;
+            threadInfo->lprNum = i - NUM_ENTRANCES;
             pthread_create(&pid[i], NULL, miniManagerExit, (void *)threadInfo);
         } else {
             //level thread
             thread_mem_t *threadInfo = (thread_mem_t *)malloc(sizeof(thread_mem_t));
             threadInfo->mem = info;
-            threadInfo->lprNum = i + 1 - NUM_ENTRANCES - NUM_EXITS;
+            threadInfo->lprNum = i - NUM_ENTRANCES - NUM_EXITS;
             pthread_create(&pid[i], NULL, miniManagerLevel, (void *)threadInfo);
         }
     }

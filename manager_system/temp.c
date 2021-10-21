@@ -50,6 +50,8 @@ int main() {
     strcpy(sharedMem->entrances[0].LPR.rego, "rego");
     printf("%s\n", sharedMem->entrances[0].LPR.rego);
 
+    sharedMem->entrances[0].SIGN.display = 'a';
+
     //set attributes for mutex and condition variables to PTHREAD_PROCESS_SHARED
     pthread_mutexattr_t mattr;
     pthread_mutexattr_init(&mattr);
@@ -60,14 +62,26 @@ int main() {
     //initialise mutex and condition variables 
     pthread_mutex_init(&(sharedMem->entrances[0].LPR.lock), &mattr);
     pthread_cond_init(&(sharedMem->entrances[0].LPR.condition), &cattr);
+    pthread_mutex_init(&(sharedMem->entrances[0].SIGN.lock), &mattr);
+    pthread_cond_init(&(sharedMem->entrances[0].SIGN.condition), &cattr);
 
     sleep(10);
+    strcpy(sharedMem->entrances[0].LPR.rego, "change");
+    printf("%s\n", sharedMem->entrances[0].LPR.rego);
     //signal change to rego
     pthread_mutex_lock(&(sharedMem->entrances[0].LPR.lock));
     pthread_cond_signal(&(sharedMem->entrances[0].LPR.condition));
     pthread_mutex_unlock(&(sharedMem->entrances[0].LPR.lock));
 
+    pthread_mutex_lock(&(sharedMem->entrances[0].SIGN.lock));
+    pthread_cond_wait(&(sharedMem->entrances[0].SIGN.condition), &(sharedMem->entrances[0].SIGN.lock));
+    pthread_mutex_unlock(&(sharedMem->entrances[0].SIGN.lock));
+
+    printf("New sign char: %c\n", sharedMem->entrances[0].SIGN.display);
+
     sleep(2);
+    strcpy(sharedMem->entrances[0].LPR.rego, "931KQD");
+    printf("%s\n", sharedMem->entrances[0].LPR.rego);
     pthread_mutex_lock(&(sharedMem->entrances[0].LPR.lock));
     pthread_cond_signal(&(sharedMem->entrances[0].LPR.condition));
     pthread_mutex_unlock(&(sharedMem->entrances[0].LPR.lock));
