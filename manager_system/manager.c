@@ -61,7 +61,7 @@ pthread_mutex_t mem_lock;
  */
 
 long getTimeMilli() {
-    long ms; // Milliseconds
+    long ns; // Nanoseconds
     long s;  // Seconds
     struct timespec spec;
 
@@ -71,10 +71,10 @@ long getTimeMilli() {
         exit(1);
     }
 
-    s  = spec.tv_sec * 1.0e3; // convert to milliseconds
-    ms = spec.tv_nsec / 1.0e6; // convert nanoseconds to milliseconds
+    s  = spec.tv_sec * 1.0e3; // convert seconds to milliseconds
+    ns = spec.tv_nsec / 1.0e6; // convert nanoseconds to milliseconds
 
-    return ms + s;
+    return ns + s;
 }
 
 int findFreeLevel(mem_t *mem) {
@@ -116,42 +116,39 @@ void *miniManagerExit(void *arg) {
 void *miniManagerEntrance(void *arg) {
     thread_mem_t *info = (thread_mem_t *)arg;
     //constantly check shared memory entrance LPR for regos
-    // int lprNum = info->lprNum;
-    int lprNum = 0;
+    int lprNum = info->lprNum;
     shm *sharedMem = info->mem->sharedMem;
     while(1) {
         //Check allocated lpr - use condition variable and mutex before accesing it. Wait for it to change
+        pthread_mutex_lock(&mem_lock);
         pthread_mutex_lock(&(sharedMem->entrances[lprNum].LPR.lock));
         pthread_cond_wait(&(sharedMem->entrances[lprNum].LPR.condition), &(sharedMem->entrances[lprNum].LPR.lock));
-        pthread_mutex_unlock(&(sharedMem->entrances[lprNum].LPR.lock));
-        //Check if rego in list (and check if aready allocated incase accidentally re-read value)
+        //Check if rego in list and if car park full
         if(htab_find(info->mem->h, sharedMem->entrances[lprNum].LPR.rego) == NULL) {
-            //doesn't exist in list - set sign to 'x' and signal change
+            //doesn't exist in list
             pthread_mutex_lock(&(sharedMem->entrances[0].SIGN.lock));
             sharedMem->entrances[0].SIGN.display = 'x';
+            pthread_cond_signal(&(sharedMem->entrances[0].SIGN.condition));
             pthread_mutex_unlock(&(sharedMem->entrances[0].SIGN.lock));
-
+        } else if(info->mem->totalCap >= NUM_CARS_PER_LEVEL * NUM_LEVELS) {
+            //full
             pthread_mutex_lock(&(sharedMem->entrances[0].SIGN.lock));
+            sharedMem->entrances[0].SIGN.display = 'x';
             pthread_cond_signal(&(sharedMem->entrances[0].SIGN.condition));
             pthread_mutex_unlock(&(sharedMem->entrances[0].SIGN.lock));
         } else {
             //exists in list
-            //If already allocated, ignore
             //Else all good, initialise time entered, find level that a park is free, display level number
             htab_change_time(info->mem->h, sharedMem->entrances[lprNum].LPR.rego, getTimeMilli());
-
+            pthread_mutex_lock(&(sharedMem->entrances[0].SIGN.lock));
+            sharedMem->entrances[0].SIGN.display = findFreeLevel(info->mem) + '0'; //converts int to char for 0-9
+            pthread_mutex_unlock(&(sharedMem->entrances[0].SIGN.lock));
+            //Raise boom gates for 20ms (check), then close boom gates - function
         }
-        
-        //Raise boom gates for 20ms (check), then close boom gates
-
-
+        //unlock rego and car park memory
+        pthread_mutex_unlock(&(sharedMem->entrances[lprNum].LPR.lock));
+        pthread_mutex_unlock(&mem_lock);
     }
-    //if new rego in entrance LPR: 
-    //0. check if car park full - reject all cars until it isn't full
-    //1. if car park not full, check if included in hashmap (if not, reject - display on sign maybe?)
-    //2. if in hashmap, enter time in hashmap, display level number with available parks
-    //raise boom gate
-    //wait 20ms then close boom gate
     return NULL;
 }
 
