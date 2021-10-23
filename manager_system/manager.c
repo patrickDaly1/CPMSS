@@ -41,7 +41,7 @@ struct thread_mem
     int lprNum;
 };
 
-//mutex for memory (mem_t)
+//mutex for thread memory (mem_t)
 pthread_mutex_t mem_lock;
 
 /** The Manager 
@@ -93,7 +93,95 @@ int findFreeLevel(mem_t *mem) {
     }
     //unlock mutex
     pthread_mutex_unlock(&mem_lock);
-    return lowestLvl;
+    return lowestLvl + 1;
+}
+
+void bgEntrance(shm *sharedMem, int typeIndex) {
+    pthread_mutex_lock(&(sharedMem->entrances[typeIndex].BG.lock));
+    sharedMem->entrances[typeIndex].BG.status = 'R';
+    pthread_cond_signal(&(sharedMem->entrances[typeIndex].BG.condition));
+    pthread_mutex_unlock(&(sharedMem->entrances[typeIndex].BG.lock));
+
+    // wait for sim to change it to open
+    pthread_mutex_lock(&(sharedMem->entrances[typeIndex].BG.lock));
+    pthread_cond_wait(&(sharedMem->entrances[typeIndex].BG.condition), &(sharedMem->entrances[typeIndex].BG.lock));
+    // check changed to right value
+    if (sharedMem->entrances[typeIndex].BG.status != 'O')
+    {
+        // Hasn't opened properly
+        pthread_mutex_unlock(&(sharedMem->entrances[typeIndex].BG.lock));
+        perror("Error raising boom gate for entrance");
+        exit(1);
+    }
+    pthread_mutex_unlock(&(sharedMem->entrances[typeIndex].BG.lock));
+    // BG opened, wait 5ms?
+    usleep(5000);
+    // close boom gate
+    pthread_mutex_lock(&(sharedMem->entrances[typeIndex].BG.lock));
+    sharedMem->entrances[typeIndex].BG.status = 'L';
+    pthread_cond_signal(&(sharedMem->entrances[typeIndex].BG.condition));
+    pthread_mutex_unlock(&(sharedMem->entrances[typeIndex].BG.lock));
+
+    // check BG is closed
+    pthread_mutex_lock(&(sharedMem->entrances[typeIndex].BG.lock));
+    pthread_cond_wait(&(sharedMem->entrances[typeIndex].BG.condition), &(sharedMem->entrances[typeIndex].BG.lock));
+    if (sharedMem->entrances[typeIndex].BG.status != 'C')
+    {
+        // Hasn't closed properly
+        pthread_mutex_unlock(&(sharedMem->entrances[typeIndex].BG.lock));
+        perror("Error closing boom gate for entrance");
+        exit(1);
+    }
+    pthread_mutex_unlock(&(sharedMem->entrances[typeIndex].BG.lock));
+}
+
+void bgExit(shm *sharedMem, int typeIndex) {
+    pthread_mutex_lock(&(sharedMem->exits[typeIndex].BG.lock));
+    sharedMem->exits[typeIndex].BG.status = 'R';
+    pthread_cond_signal(&(sharedMem->exits[typeIndex].BG.condition));
+    pthread_mutex_unlock(&(sharedMem->exits[typeIndex].BG.lock));
+
+    // wait for sim to change it to open
+    pthread_mutex_lock(&(sharedMem->exits[typeIndex].BG.lock));
+    pthread_cond_wait(&(sharedMem->exits[typeIndex].BG.condition), &(sharedMem->exits[typeIndex].BG.lock));
+    // check changed to right value
+    if (sharedMem->exits[typeIndex].BG.status != 'O')
+    {
+        // Hasn't opened properly
+        pthread_mutex_unlock(&(sharedMem->exits[typeIndex].BG.lock));
+        perror("Error raising boom gate for entrance");
+        exit(1);
+    }
+    pthread_mutex_unlock(&(sharedMem->exits[typeIndex].BG.lock));
+    // BG opened, wait 5ms?
+    usleep(5000);
+    // close boom gate
+    pthread_mutex_lock(&(sharedMem->exits[typeIndex].BG.lock));
+    sharedMem->exits[typeIndex].BG.status = 'L';
+    pthread_cond_signal(&(sharedMem->exits[typeIndex].BG.condition));
+    pthread_mutex_unlock(&(sharedMem->exits[typeIndex].BG.lock));
+
+    // check BG is closed
+    pthread_mutex_lock(&(sharedMem->exits[typeIndex].BG.lock));
+    pthread_cond_wait(&(sharedMem->exits[typeIndex].BG.condition), &(sharedMem->exits[typeIndex].BG.lock));
+    if (sharedMem->exits[typeIndex].BG.status != 'C')
+    {
+        // Hasn't opened properly
+        pthread_mutex_unlock(&(sharedMem->exits[typeIndex].BG.lock));
+        perror("Error closing boom gate for entrance");
+        exit(1);
+    }
+    pthread_mutex_unlock(&(sharedMem->exits[typeIndex].BG.lock));
+}
+
+void boomGateOp(shm *sharedMem, char type, int typeIndex) {
+    if(type == 'n') {
+        //entrance
+        bgEntrance(sharedMem, typeIndex);
+    } else if(type == 'x') {
+        //exit
+        bgExit(sharedMem, typeIndex);
+    }
 }
 
 void *miniManagerLevel(void *arg) {
@@ -120,30 +208,35 @@ void *miniManagerEntrance(void *arg) {
     shm *sharedMem = info->mem->sharedMem;
     while(1) {
         //Check allocated lpr - use condition variable and mutex before accesing it. Wait for it to change
-        pthread_mutex_lock(&mem_lock);
         pthread_mutex_lock(&(sharedMem->entrances[lprNum].LPR.lock));
         pthread_cond_wait(&(sharedMem->entrances[lprNum].LPR.condition), &(sharedMem->entrances[lprNum].LPR.lock));
+        pthread_mutex_lock(&mem_lock);
         //Check if rego in list and if car park full
         if(htab_find(info->mem->h, sharedMem->entrances[lprNum].LPR.rego) == NULL) {
             //doesn't exist in list
-            pthread_mutex_lock(&(sharedMem->entrances[0].SIGN.lock));
-            sharedMem->entrances[0].SIGN.display = 'x';
-            pthread_cond_signal(&(sharedMem->entrances[0].SIGN.condition));
-            pthread_mutex_unlock(&(sharedMem->entrances[0].SIGN.lock));
+            pthread_mutex_lock(&(sharedMem->entrances[lprNum].SIGN.lock));
+            sharedMem->entrances[0].SIGN.display = 'X';
+            pthread_cond_signal(&(sharedMem->entrances[lprNum].SIGN.condition));
+            pthread_mutex_unlock(&(sharedMem->entrances[lprNum].SIGN.lock));
         } else if(info->mem->totalCap >= NUM_CARS_PER_LEVEL * NUM_LEVELS) {
             //full
-            pthread_mutex_lock(&(sharedMem->entrances[0].SIGN.lock));
-            sharedMem->entrances[0].SIGN.display = 'x';
-            pthread_cond_signal(&(sharedMem->entrances[0].SIGN.condition));
-            pthread_mutex_unlock(&(sharedMem->entrances[0].SIGN.lock));
+            pthread_mutex_lock(&(sharedMem->entrances[lprNum].SIGN.lock));
+            sharedMem->entrances[0].SIGN.display = 'F';
+            pthread_cond_signal(&(sharedMem->entrances[lprNum].SIGN.condition));
+            pthread_mutex_unlock(&(sharedMem->entrances[lprNum].SIGN.lock));
         } else {
-            //exists in list
-            //Else all good, initialise time entered, find level that a park is free, display level number
+            //exists in list and car park not full
             htab_change_time(info->mem->h, sharedMem->entrances[lprNum].LPR.rego, getTimeMilli());
-            pthread_mutex_lock(&(sharedMem->entrances[0].SIGN.lock));
-            sharedMem->entrances[0].SIGN.display = findFreeLevel(info->mem) + '0'; //converts int to char for 0-9
-            pthread_mutex_unlock(&(sharedMem->entrances[0].SIGN.lock));
-            //Raise boom gates for 20ms (check), then close boom gates - function
+            pthread_mutex_lock(&(sharedMem->entrances[lprNum].SIGN.lock));
+            sharedMem->entrances[lprNum].SIGN.display = findFreeLevel(info->mem) + '0'; //converts int to char for 0-9
+            pthread_cond_signal(&(sharedMem->entrances[lprNum].SIGN.condition));
+            pthread_mutex_unlock(&(sharedMem->entrances[lprNum].SIGN.lock));
+            //Raise boom gates and unlock thread memory, then relock after opening boom gate
+            pthread_mutex_unlock(&mem_lock);
+            boomGateOp(sharedMem, 'n', lprNum);
+            pthread_mutex_lock(&mem_lock);
+            //increment car park capacity (lpr levels will alter level capacity)
+            ++(info->mem->totalCap);
         }
         //unlock rego and car park memory
         pthread_mutex_unlock(&(sharedMem->entrances[lprNum].LPR.lock));
