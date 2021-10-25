@@ -33,7 +33,7 @@ void *myThreadFun(void *arg) {
 void print_current_time_with_ms (void)
 {
     long start = getTimeMilli();
-    printf("Internal time start : %03ld milliseconds\n", start);
+    printf("Internal time start: %03ld milliseconds\n", start);
     sleep(10);
     long end = getTimeMilli();
     printf("Internal time end: %03ld milliseconds\n", getTimeMilli());

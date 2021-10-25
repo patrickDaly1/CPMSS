@@ -25,11 +25,11 @@ struct mem
     //shared memory pointer
     shm *sharedMem;
     //level capacity array
-    int levelCap[NUM_LEVELS]; //check updates
+    int levelCap[NUM_LEVELS];
     //total capacity
-    int totalCap; //check updates
-    //total billing (cents)
-    int billing; //check updates
+    int totalCap;
+    //total billing
+    double billing;
 };
 
 typedef struct thread_mem thread_mem_t;
@@ -144,7 +144,7 @@ void bgExit(shm *sharedMem, int typeIndex) {
     // wait for sim to change it to open
     pthread_mutex_lock(&(sharedMem->exits[typeIndex].BG.lock));
     pthread_cond_wait(&(sharedMem->exits[typeIndex].BG.condition), &(sharedMem->exits[typeIndex].BG.lock));
-    // check changed to right value
+    // check changed to right value (check this is how condition var works)
     if (sharedMem->exits[typeIndex].BG.status != 'O')
     {
         // Hasn't opened properly
@@ -191,13 +191,42 @@ void *miniManagerLevel(void *arg) {
     return NULL;
 }
 
+void validateBill() {
+    return;
+}
+
 void *miniManagerExit(void *arg) {
     thread_mem_t *info = (thread_mem_t *)arg;
-    //constantly check shared memory exit LPR for regos (same loop)
-    //if new rego in exit LPR: 
-    //1. stop park time, calculate billing and save in billing.txt
-    //2. decrement previous level capacity, decrement car park capacity, increase revenue
-    //3. raise boom gate, wait 20ms, close boom gate
+    //setup file stream
+    FILE *fp = fopen("billing.txt", "a");
+    if(fp == NULL) {
+        perror("fopen billing.txt\n");
+    }
+    int lprNum = info->lprNum;
+    shm *sharedMem = info->mem->sharedMem;
+    while(1) {
+        //Check allocated lpr - use condition variable and mutex before accesing it
+        pthread_mutex_lock(&(sharedMem->exits[lprNum].LPR.lock));
+        pthread_cond_wait(&(sharedMem->exits[lprNum].LPR.condition), &(sharedMem->exits[lprNum].LPR.lock));
+        pthread_mutex_lock(&mem_lock);
+        //car leaving, get time spent (current time - time saved)
+        item_t *car = htab_find(info->mem->h, sharedMem->exits[lprNum].LPR.rego);
+        long timeEntered = car->timeEntered;
+        double bill = (getTimeMilli() - timeEntered) * 0.05;
+        //save into file
+        fprintf(fp, "%s %.2f\n", sharedMem->exits[lprNum].LPR.rego, bill);
+        //decrement previous level and overall capacity, increase revenue
+        --(info->mem->levelCap[car->levelParked + 1]);
+        --(info->mem->totalCap);
+        info->mem->billing += bill;
+        //boom gate operation
+        //Raise boom gates and unlock thread memory, then relock after opening boom gate
+        pthread_mutex_unlock(&mem_lock);
+        boomGateOp(sharedMem, 'x', lprNum);
+        //unlock shared memory
+        pthread_mutex_unlock(&(sharedMem->exits[lprNum].LPR.lock));
+    }
+    fclose(fp);
     return NULL;
 }
 
@@ -207,7 +236,7 @@ void *miniManagerEntrance(void *arg) {
     int lprNum = info->lprNum;
     shm *sharedMem = info->mem->sharedMem;
     while(1) {
-        //Check allocated lpr - use condition variable and mutex before accesing it. Wait for it to change
+        //Check allocated lpr - use condition variable and mutex before accesing it
         pthread_mutex_lock(&(sharedMem->entrances[lprNum].LPR.lock));
         pthread_cond_wait(&(sharedMem->entrances[lprNum].LPR.condition), &(sharedMem->entrances[lprNum].LPR.lock));
         pthread_mutex_lock(&mem_lock);
