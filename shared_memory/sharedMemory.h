@@ -47,7 +47,7 @@ typedef struct exit {
 //level
 typedef struct level {
     lpr_t LPR;
-    boom_gate_t BG;
+    // boom_gate_t BG;
     short tempSen1; //correct? ** think so **
     bool alarm1; //correct? ** think so **
 } level_t;

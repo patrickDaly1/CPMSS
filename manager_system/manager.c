@@ -186,13 +186,31 @@ void boomGateOp(shm *sharedMem, char type, int typeIndex) {
 
 void *miniManagerLevel(void *arg) {
     thread_mem_t *info = (thread_mem_t *)arg;
-
-    //check level
+    int lprNum = info->lprNum;
+    shm *sharedMem = info->mem->sharedMem;
+    while(1) {
+        //wait for signal of LPR for this level
+        pthread_mutex_lock(&(sharedMem->levels[lprNum].LPR.lock));
+        pthread_cond_wait(&(sharedMem->levels[lprNum].LPR.condition), &(sharedMem->levels[lprNum].LPR.lock));
+        pthread_mutex_lock(&mem_lock);
+        //new car on level - increment level capacity, if was on previous level - decrement capacity
+        ++(info->mem->levelCap[lprNum]);
+        item_t *car = htab_find(info->mem->h, sharedMem->levels[lprNum].LPR.rego);
+        if(car->levelParked > 0) {
+            //has parked on previous level
+            --(info->mem->levelCap[car->levelParked - 1]);
+        }
+        //change level
+        car->levelParked = lprNum + 1;
+        //unlock mutexes
+        pthread_mutex_unlock(&mem_lock);
+        pthread_mutex_unlock(&(sharedMem->levels[lprNum].LPR.lock));
+    }
     return NULL;
 }
 
-void validateBill() {
-    return;
+double validateBill() {
+    return 0;
 }
 
 void *miniManagerExit(void *arg) {
@@ -284,7 +302,12 @@ void *displayStatus(void *arg) {
     //revenue car park has brought in ()
 
     //sleep(50) //50ms sleep
+
     return NULL;
+}
+
+int inputChecker() {
+    return 0;
 }
 
 int main(void) {
@@ -299,21 +322,18 @@ int main(void) {
     const char *key = "PARKING_TEST"; //change to "PARKING"
     shm *sharedMem;
     size_t shmSize = 2920;
-
     //Locate the segment
     if ((shm_fd = shm_open(key, O_RDWR, 0)) < 0)
     {
         perror("shm_open");
         return 1;
     }
-
     //Attach segment to our data space.
     if ((sharedMem = (shm *)mmap(0, shmSize, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0)) == (void *)-1)
     {
         perror("mmap");
         return 1;
     }
-
     //setup hashtable
     size_t buckets = 10;
     htab_t h;
@@ -322,7 +342,6 @@ int main(void) {
         perror("failed to initialise hash table\n");
         return 1;
     }
-
     //Setup file reader
     FILE *fp;
     size_t len = 10;
@@ -336,7 +355,6 @@ int main(void) {
         perror("Unable to allocate memory for line\n");
         exit(2);
     }
-
     //Read plates.txt per line and store in hashtable
     while((read = getline(&line, &len, fp)) != -1) { //function
         char copy[read];
@@ -345,7 +363,6 @@ int main(void) {
     }
     free(line);
     fclose(fp);
-
     //allocate memory for capacity and billed money (cents) - maybe make struct for this
     mem_t *info = (mem_t *)malloc(sizeof(mem_t)); //function
     info->billing = 0;
@@ -355,7 +372,6 @@ int main(void) {
     }
     info->h = &h;
     info->sharedMem = sharedMem;
-    
     //create threads
     int total = NUM_ENTRANCES + NUM_EXITS + NUM_LEVELS;
     pthread_t pid[total];
@@ -384,12 +400,10 @@ int main(void) {
     for(int i = 0; i < total; ++i) {
         pthread_join(pid[i], NULL);
     }
-
     //close
     if (munmap(sharedMem, shmSize) != 0) {
         perror("munmap");
     }
-
     if (shm_unlink(key) != 0) {
         perror("shm_unlink");
     }

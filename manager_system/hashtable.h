@@ -9,8 +9,8 @@
 typedef struct item item_t;
 struct item
 {
-    char rego[6]; //key
-    long timeEntered; //change to structs
+    char rego[6];
+    long timeEntered;
     int levelParked;
     item_t *next;
 };
