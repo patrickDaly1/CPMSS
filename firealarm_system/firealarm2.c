@@ -9,38 +9,62 @@
 #include <stdbool.h>
 
 
+struct boomgate {
+	pthread_mutex_t m;
+	pthread_cond_t c;
+	char s;
+};
+
+struct parkingsign {
+	pthread_mutex_t m;
+	pthread_cond_t c;
+	char display;
+};
+
+void swap(int *xp, int *yp)
+{
+    int temp = *xp;
+    *xp = *yp;
+    *yp = temp;
+}
+
+/* Source: https://www.geeksforgeeks.org/selection-sort/ */
+void selectionSort(int arr[], int n)
+{
+    int i, j, min_idx;
+ 
+    // One by one move boundary of unsorted subarray
+    for (i = 0; i < n-1; i++)
+    {
+        // Find the minimum element in unsorted array
+        min_idx = i;
+        for (j = i+1; j < n; j++)
+        if (arr[j] < arr[min_idx])
+            min_idx = j;
+ 
+        // Swap the found minimum element with the first element
+        swap(&arr[min_idx], &arr[i]);
+    }
+}
+
+
 int main()
 {
+	int runs = 1;
+	int levels = 5;
+	int exits = 5;
+	int entrances = 5;
+	
+	int medianList[30];
+
     int shm_fd;
-    volatile void *shm;
+    void *shm;
 	
 	shm_fd = shm_open("PARKING_TEST", O_RDWR, 0);
 	shm = mmap(0, 2920, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
 
-	int levels = 5;
-	int exits = 5;
-	int entrances = 5;
-
-	int medianList[30];
-
-	int compare (const void * a, const void * b) {
-		return ( (int)a - (int)b );
-	}
-
-	struct boomgate {
-	pthread_mutex_t m;
-	pthread_cond_t c;
-	char s;
-	};
-
-	struct parkingsign {
-		pthread_mutex_t m;
-		pthread_cond_t c;
-		char display;
-	};
-
-
-	for(;;) {
+	
+	while(runs < 10) {
 
 		int tempList[35];
 		int count = 0;
@@ -51,6 +75,8 @@ int main()
 		int fixedTempCount;
 
 		bool alarm_active = false;
+
+		runs++;
 
 		for(int i = 0; i < levels; i++) {
 
@@ -84,7 +110,8 @@ int main()
 				first = false;
 
 				/* Sort temp list */
-				qsort(tempList, 5, sizeof(int), compare);
+    			int n = sizeof(tempList)/sizeof(tempList[0]);
+    			selectionSort(tempList, n);
 
 				/* Find median */
 				medianTemp = tempList[count - 3];
@@ -99,6 +126,7 @@ int main()
 					fixedTempCount++;
 				}
 			}
+			
 			if(fixedTempCount >= 37) {
 				alarm_active = true;
 			}
