@@ -92,7 +92,7 @@ int main(int argc, char** argv)
         //initialise levels
     }
 
-    sleep(10);
+    sleep(5);
 
     /* INITIALISE CAR GENERATING THREAD */
     pthread_create(&car_init_thread, NULL, car_queuer, NULL); 
@@ -121,11 +121,9 @@ int main(int argc, char** argv)
 
     for (int i = 0; i < entrys_exits; i++) 
         pthread_join(boom_gate_exit_thread[i], NULL);
-    printf("Got to end of thread creation\n");
-    while(1) {
-        usleep(5000);
-    }
+    
 
+    for(;;){}
 
     /* CLOSING */
 
@@ -151,7 +149,6 @@ int main(int argc, char** argv)
     
     pthread_mutexattr_destroy(&mattr);
     pthread_condattr_destroy(&cattr);
-    printf("Got to end of main\n");
 }
 
 /**
@@ -223,7 +220,7 @@ car_t *car_init(void)
  
 void *car_queuer(void *arg)
 {
-    for(int i = 0; i < 100; i++)
+    for(int i = 0; i < 30; i++)
     {
         // initialise new car and add to queue
         pthread_mutex_lock(&lock_queue);
@@ -275,32 +272,33 @@ void *boom_gate_entry(void *ptr)
         if ((curr_car != NULL))
         {
             // *** PASS REGO TO CORRECT LPR
-            printf("got here 1\n");
+            
             pthread_mutex_lock(&(sharedMem->entrances[entry].LPR.lock));
             strcpy(sharedMem->entrances[entry].LPR.rego, curr_car->rego);
             pthread_cond_signal(&(sharedMem->entrances[entry].LPR.condition));
             pthread_mutex_unlock(&(sharedMem->entrances[entry].LPR.lock));
-            printf("got here 2\n");
+            
             pthread_mutex_lock(&(sharedMem->entrances[entry].SIGN.lock));
-            pthread_cond_wait(&sharedMem->entrances[entry].SIGN.condition, &(sharedMem->entrances[entry].SIGN.lock));
+            pthread_cond_wait(&(sharedMem->entrances[entry].SIGN.condition), &(sharedMem->entrances[entry].SIGN.lock));
             pthread_mutex_unlock(&(sharedMem->entrances[entry].SIGN.lock));
-            printf("got here 3\n");
-            printf("sign display: %c\n", sharedMem->entrances[entry].SIGN.display);
-            if ((sharedMem->entrances[entry].SIGN.display == 'X') || (sharedMem->entrances[entry].SIGN.display == 'F'))
+            
+            printf ("rego at entry %d: %s\n", entry, curr_car->rego);
+            printf("sign display entry %d: %c\n", entry, sharedMem->entrances[entry].SIGN.display);
+            if ((sharedMem->entrances[entry].SIGN.display == 'X') || (sharedMem->entrances[entry].SIGN.display == 'F') || (&sharedMem->entrances[entry].SIGN.display == NULL))
             {
-                printf("In here mate 1\n");
+                printf("here 1 %d\n", entry);
                 pthread_mutex_lock(&lock_queue);
                 deleteNode(&entryQueue, curr_car->rego);
                 pthread_mutex_unlock(&lock_queue);
             }
             else
             {
-                printf("In here mate 2\n");
+                printf("here 2 %d\n", entry);
                 pthread_mutex_lock(&(sharedMem->entrances[entry].BG.lock));
                 pthread_cond_wait(&sharedMem->entrances[entry].BG.condition, &(sharedMem->entrances[entry].BG.lock));
                 pthread_mutex_unlock(&(sharedMem->entrances[entry].BG.lock));
                 if(sharedMem->entrances[entry].BG.status != 'R') {
-                    perror("Error raising boom entry\n");
+                    printf("Error raising boom entry: %d\n", entry);
                 }
                 usleep(10000); // open boom gate
 
@@ -326,7 +324,7 @@ void *boom_gate_entry(void *ptr)
                 pthread_cond_wait(&sharedMem->entrances[entry].BG.condition, &(sharedMem->entrances[entry].BG.lock));
                 pthread_mutex_unlock(&(sharedMem->entrances[entry].BG.lock));
                 if(sharedMem->entrances[entry].BG.status != 'L') {
-                    perror("Error raising boom\n");
+                    printf("Error lowering boom entry: %d\n", entry);
                 }
                 
                 usleep(10000); // close boom gate
@@ -389,7 +387,7 @@ void *boom_gate_exit(void *ptr)
             pthread_cond_wait(&sharedMem->exits[exit].BG.condition, &(sharedMem->exits[exit].BG.lock));
             pthread_mutex_unlock(&(sharedMem->exits[exit].BG.lock));
             if(sharedMem->exits[exit].BG.status != 'R') {
-                perror("Error raising boom\n");
+                printf("Error raising boom exit: %d\n", exit);
             }
 
             usleep(10000); // open boom gate
@@ -410,7 +408,7 @@ void *boom_gate_exit(void *ptr)
             pthread_cond_wait(&sharedMem->exits[exit].BG.condition, &(sharedMem->exits[exit].BG.lock));
             pthread_mutex_unlock(&(sharedMem->exits[exit].BG.lock));
             if(sharedMem->exits[exit].BG.status != 'L') {
-                perror("Error raising boom\n");
+                printf("Error lowering boom exit: %d\n", exit);
             }
 
             usleep(10000); // close boom gate   
