@@ -296,7 +296,7 @@ void *displayStatus(void *arg) {
     mem_t *mem = (mem_t *)arg;
     shm *sharedMem = mem->sharedMem;
     while(1) {
-        system("clear");
+        // system("cls");
         //how full each level is
         printf("| Car capacity per level (occupied/maximum):\n");
         //lock mem
@@ -340,7 +340,6 @@ void *displayStatus(void *arg) {
         //wait 50ms
         usleep(50000);
     }
-
     return NULL;
 }
 
@@ -360,7 +359,7 @@ int main(void) {
     }
     //open the shared memory - key: PARKING (PARKING_TEST for test)
     int shm_fd;
-    const char *key = "PARKING_TEST"; //change to "PARKING"
+    const char *key = "PARKING"; //change to "PARKING"
     shm *sharedMem;
     size_t shmSize = 2920;
     //Locate the segment
