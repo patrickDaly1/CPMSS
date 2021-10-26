@@ -255,7 +255,7 @@ car_t *car_init(void)
  
 void *car_queuer(void *arg)
 {
-    for(int i = 0; i < 30; i++)
+    for(int i = 0; i < 10; i++)
     {
         // initialise new car and add to queue
         pthread_mutex_lock(&lock_queue);

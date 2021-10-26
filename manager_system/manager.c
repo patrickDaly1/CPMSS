@@ -282,13 +282,15 @@ void *miniManagerEntrance(void *arg) {
             htab_change_time(info->mem->h, sharedMem->entrances[lprNum].LPR.rego, getTimeMilli());
             pthread_mutex_lock(&(sharedMem->entrances[lprNum].SIGN.lock));
             printf("here 1\n");
+
+            pthread_mutex_unlock(&mem_lock);
             sharedMem->entrances[lprNum].SIGN.display = findFreeLevel(info->mem) + '0'; //converts int to char for 0-9
             printf("here 2\n");
             pthread_cond_signal(&(sharedMem->entrances[lprNum].SIGN.condition));
             pthread_mutex_unlock(&(sharedMem->entrances[lprNum].SIGN.lock));
             
             //Raise boom gates and unlock thread memory, then relock after opening boom gate
-            pthread_mutex_unlock(&mem_lock);
+            
             boomGateOp(sharedMem, 'n', lprNum);
             pthread_mutex_lock(&mem_lock);
             //increment car park capacity (lpr levels will alter level capacity)
