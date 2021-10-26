@@ -75,11 +75,21 @@ int main(int argc, char** argv)
     pthread_mutex_init(&lock_queue, NULL);
     for (int i = 0; i < entrys_exits; i++)
     {
-
         pthread_cond_init(&sharedMem->entrances[i].BG.condition, &cattr);
+        pthread_cond_init(&sharedMem->entrances[i].LPR.condition, &cattr);
+        pthread_cond_init(&sharedMem->entrances[i].SIGN.condition, &cattr);
+
         pthread_mutex_init(&sharedMem->entrances[i].BG.lock, &mattr);
+        pthread_mutex_init(&sharedMem->entrances[i].SIGN.lock, &mattr);
+        pthread_mutex_init(&sharedMem->entrances[i].LPR.lock, &mattr);
+
         pthread_cond_init(&sharedMem->exits[i].BG.condition, &cattr);
+        pthread_cond_init(&sharedMem->exits[i].LPR.condition, &cattr);
+
         pthread_mutex_init(&sharedMem->exits[i].BG.lock, &mattr);
+        pthread_mutex_init(&sharedMem->exits[i].LPR.lock, &mattr);
+
+        //initialise levels
     }
 
     sleep(10);
@@ -262,29 +272,32 @@ void *boom_gate_entry(void *ptr)
         if ((curr_car != NULL))
         {
             // *** PASS REGO TO CORRECT LPR
+            printf("got here 1\n");
             pthread_mutex_lock(&(sharedMem->entrances[entry].LPR.lock));
             strcpy(sharedMem->entrances[entry].LPR.rego, curr_car->rego);
             pthread_cond_signal(&(sharedMem->entrances[entry].LPR.condition));
             pthread_mutex_unlock(&(sharedMem->entrances[entry].LPR.lock));
-
+            printf("got here 2\n");
             pthread_mutex_lock(&(sharedMem->entrances[entry].SIGN.lock));
             pthread_cond_wait(&sharedMem->entrances[entry].SIGN.condition, &(sharedMem->entrances[entry].SIGN.lock));
             pthread_mutex_unlock(&(sharedMem->entrances[entry].SIGN.lock));
-            
-            if (sharedMem->entrances[entry].SIGN.display == 'X' || 
-            sharedMem->entrances[entry].SIGN.display == 'F') //will change
+            printf("got here 3\n");
+            printf("sign display: %c\n", sharedMem->entrances[entry].SIGN.display);
+            if ((sharedMem->entrances[entry].SIGN.display == 'X') || (sharedMem->entrances[entry].SIGN.display == 'F'))
             {
+                printf("In here mate 1\n");
                 pthread_mutex_lock(&lock_queue);
                 deleteNode(&entryQueue, curr_car->rego);
                 pthread_mutex_unlock(&lock_queue);
             }
             else
             {
+                printf("In here mate 2\n");
                 pthread_mutex_lock(&(sharedMem->entrances[entry].BG.lock));
                 pthread_cond_wait(&sharedMem->entrances[entry].BG.condition, &(sharedMem->entrances[entry].BG.lock));
                 pthread_mutex_unlock(&(sharedMem->entrances[entry].BG.lock));
                 if(sharedMem->entrances[entry].BG.status != 'R') {
-                    perror("Error raising boom\n");
+                    perror("Error raising boom entry\n");
                 }
                 usleep(10000); // open boom gate
 
