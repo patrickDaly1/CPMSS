@@ -121,8 +121,10 @@ int main(int argc, char** argv)
 
     for (int i = 0; i < entrys_exits; i++) 
         pthread_join(boom_gate_exit_thread[i], NULL);
-    
-
+    printf("Got to end of thread creation\n");
+    while(1) {
+        usleep(5000);
+    }
 
 
     /* CLOSING */
@@ -149,6 +151,7 @@ int main(int argc, char** argv)
     
     pthread_mutexattr_destroy(&mattr);
     pthread_condattr_destroy(&cattr);
+    printf("Got to end of main\n");
 }
 
 /**
