@@ -9,7 +9,7 @@
 #include <semaphore.h>
 #include "linkedlist.h"
 #include "../shared_memory/sharedMemory.h"
-#include <hashtable.h>
+#include "hashtable.h"
 
 #define entrys_exits 5
 #define levels 5
@@ -36,6 +36,8 @@ size_t shmSize = 2920;
 int shm_fd;
 shm *sharedMem;
 const char *key = "PARKING";
+
+char lastRego[6] = "029MZH";
 
 int carsEntered, carsParked, carsExited, added;
 
@@ -70,6 +72,7 @@ int main(int argc, char** argv)
         perror("failed to initialise hash table\n");
         return 1;
     }
+
     //Setup file reader
     FILE *fp;
     size_t len = 10;
@@ -87,7 +90,7 @@ int main(int argc, char** argv)
     while((read = getline(&line, &len, fp)) != -1) { //function
         char copy[read];
         strncpy(copy, line, read - 2);
-        htab_add(&h, copy, 0, 0);
+        htab_add(&h, copy);
     }
     free(line);
     fclose(fp);
@@ -197,16 +200,18 @@ car_t *car_init(void)
     car_t *new_car = (car_t *)malloc(sizeof(car_t));
 
     // generate random rego values
-    int odds = rand() % 4;
+    int odds = rand() % 2;
 
     // create random probability of guarenteed entry
     new_car->entry = rand() % entrys_exits;
     //printf("%d\n", new_car->entry);
     for (;;)
     {
-        if(odds == -1)
+        if(odds == 0)
         {
-            // choose from plates.txt file
+            //stpcpy(lastRego, (htab_findNext(&h, lastRego))->rego);
+            strcpy(new_car->rego, lastRego);
+            
         }
         else
         {

@@ -10,14 +10,12 @@ typedef struct item item_t;
 struct item
 {
     char rego[6];
-    long timeEntered;
-    int levelParked;
     item_t *next;
 };
 
 void item_print(item_t *i)
 {
-    printf("Rego=%s timeEntered=%03ld levelParked =%d\n", i->rego, i->timeEntered, i->levelParked);
+    printf("Rego=%s\n", i->rego);
 }
 
 // A hash table mapping a string to an integer.
@@ -81,11 +79,24 @@ item_t *htab_find(htab_t *h, char *rego)
     return NULL;
 }
 
+item_t *htab_findNext(htab_t *h, char *rego)
+{
+    for (item_t *i = htab_bucket(h, rego); i != NULL; i = i->next)
+    {
+        if (strcmp(i->rego, rego) == 0)
+        { // found the key
+            return i->next;
+        }
+    }
+    return NULL;
+}
+
+
 // Add a rego with value to the hash table.
 // pre: htab_find(h, rego) == NULL
 // post: (return == false AND allocation of new item failed)
 //       OR (htab_find(h, rego) != NULL) 
-bool htab_add(htab_t *h, char *rego, long timeEntered, int levelParked)
+bool htab_add(htab_t *h, char *rego)
 {
     // allocate new item
     item_t *newhead = (item_t *)malloc(sizeof(item_t));
@@ -94,8 +105,6 @@ bool htab_add(htab_t *h, char *rego, long timeEntered, int levelParked)
         return false;
     }
     strcpy(newhead->rego, rego);
-    newhead->timeEntered = timeEntered;
-    newhead->levelParked = levelParked;
 
     // hash key and place item in appropriate bucket
     size_t bucket = htab_index(h, rego);
@@ -181,14 +190,6 @@ void htab_destroy(htab_t *h)
     free(h->buckets);
     h->buckets = NULL;
     h->size = 0;
-}
-
-void htab_change_time(htab_t *h, char *rego, long time) {
-    item_t *i = htab_find(h, rego);
-    if(i != NULL) {
-        //found, change time
-        i->timeEntered = time;
-    }
 }
 
 // TESTER FUNCTION
