@@ -97,10 +97,12 @@ int findFreeLevel(mem_t *mem) {
 }
 
 void bgEntrance(shm *sharedMem, int typeIndex) {
+    printf("Boom gate opening at %d", typeIndex);
     pthread_mutex_lock(&(sharedMem->entrances[typeIndex].BG.lock));
     sharedMem->entrances[typeIndex].BG.status = 'R';
     pthread_cond_signal(&(sharedMem->entrances[typeIndex].BG.condition));
     pthread_mutex_unlock(&(sharedMem->entrances[typeIndex].BG.lock));
+    
 
     // wait for sim to change it to open
     pthread_mutex_lock(&(sharedMem->entrances[typeIndex].BG.lock));
@@ -279,9 +281,12 @@ void *miniManagerEntrance(void *arg) {
             //exists in list and car park not full
             htab_change_time(info->mem->h, sharedMem->entrances[lprNum].LPR.rego, getTimeMilli());
             pthread_mutex_lock(&(sharedMem->entrances[lprNum].SIGN.lock));
+            printf("here 1\n");
             sharedMem->entrances[lprNum].SIGN.display = findFreeLevel(info->mem) + '0'; //converts int to char for 0-9
+            printf("here 2\n");
             pthread_cond_signal(&(sharedMem->entrances[lprNum].SIGN.condition));
             pthread_mutex_unlock(&(sharedMem->entrances[lprNum].SIGN.lock));
+            
             //Raise boom gates and unlock thread memory, then relock after opening boom gate
             pthread_mutex_unlock(&mem_lock);
             boomGateOp(sharedMem, 'n', lprNum);

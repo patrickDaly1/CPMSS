@@ -209,16 +209,14 @@ car_t *car_init(void)
     {
         if(odds == 0)
         {
-            //stpcpy(lastRego, (htab_findNext(&h, lastRego))->rego);
-            strcpy(new_car->rego, lastRego);
-            
+            strcpy(new_car->rego, "137JEG");
         }
         else
         {
             for(int i = 0; i < 3; i++)
             {
-                new_car->rego[i] = (char)((rand() % 26) + 65);
-                new_car->rego[i + 3] = (rand() % 10) + '0';
+                new_car->rego[i + 3] = (char)((rand() % 26) + 65);
+                new_car->rego[i] = (rand() % 10) + '0';
             }
         }
 
@@ -234,7 +232,6 @@ car_t *car_init(void)
 
             return new_car;
         }
-
         else if (!(search(entryQueue, new_car->rego)) || !(search(inCarpark, new_car->rego)) || 
             !(search(exitQueue, new_car->rego)))
         {
