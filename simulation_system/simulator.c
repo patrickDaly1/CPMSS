@@ -207,7 +207,7 @@ car_t *car_init(void)
     //printf("%d\n", new_car->entry);
     for (;;)
     {
-        if(odds == 0)
+        if(odds == -1)
         {
             strcpy(new_car->rego, "137JEG");
         }
