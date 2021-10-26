@@ -4,13 +4,15 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <semaphore.h>
 #include "linkedlist.h"
 #include "../shared_memory/sharedMemory.h"
 
-#define entrys_exits 5;
-#define levels 5;
-#define cars_per_level 20;
+#define entrys_exits 5
+#define levels 5
+#define cars_per_level 20
 
 
 struct Node* entryQueue = NULL;
@@ -74,10 +76,10 @@ int main(int argc, char argv)
     for (int i = 0; i < entrys_exits; i++)
     {
 
-        pthread_cond_init(&sharedMem->entrances[i]->BG->condition, &cattr);
-        pthread_mutex_init(&sharedMem->entrances[i]->BG->lock, &mattr);
-        pthread_cond_init(&sharedMem->exits[i]->BG->condition, &cattr);
-        pthread_mutex_init(&sharedMem->exits[i]->BG->lock, &mattr);
+        pthread_cond_init(&sharedMem->entrances[i].BG.condition, &cattr);
+        pthread_mutex_init(&sharedMem->entrances[i].BG.lock, &mattr);
+        pthread_cond_init(&sharedMem->exits[i].BG.condition, &cattr);
+        pthread_mutex_init(&sharedMem->exits[i].BG.lock, &mattr);
     }
 
     /* INITIALISE CAR GENERATING THREAD */
@@ -96,8 +98,8 @@ int main(int argc, char argv)
     //     pthread_create(&boom_gate_exit_thread[i], NULL, (void*) boom_gate_exit, &loc[i]);
     // }
 
-    // /* INITIALISE TEMP SENSOR THREADS */
-    // pthread_create(&temp_sensor_thread, NULL, (void *) temp_sensor, NULL);
+    /* INITIALISE TEMP SENSOR THREADS */
+    //pthread_create(&temp_sensor_thread, NULL, (void *) temp_sensor, NULL);
 
     /* CLOSE SHARED MEMORY */
     if (munmap(sharedMem, shmSize) != 0) {
@@ -112,10 +114,10 @@ int main(int argc, char argv)
     for (int i = 0; i < entrys_exits; i++)
     {
 
-        pthread_cond_destroy(&sharedMem->entrances[i]->BG->condition);
-        pthread_mutex_destroy(&sharedMem->entrances[i]->BG->lock);
-        pthread_cond_destroy(&sharedMem->exits[i]->BG->condition);
-        pthread_mutex_destroy(&sharedMem->exits[i]->BG->lock);
+        pthread_cond_destroy(&sharedMem->entrances[i].BG.condition);
+        pthread_mutex_destroy(&sharedMem->entrances[i].BG.lock);
+        pthread_cond_destroy(&sharedMem->exits[i].BG.condition);
+        pthread_mutex_destroy(&sharedMem->exits[i].BG.lock);
     }
 
     pthread_mutexattr_destroy(&mattr);
