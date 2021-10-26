@@ -9,6 +9,7 @@
 #include <semaphore.h>
 #include "linkedlist.h"
 #include "../shared_memory/sharedMemory.h"
+#include <hashtable.h>
 
 #define entrys_exits 5
 #define levels 5
@@ -18,6 +19,9 @@
 struct Node* entryQueue = NULL;
 struct Node* inCarpark = NULL;
 struct Node* exitQueue = NULL;
+
+size_t buckets = 10;
+htab_t h;
 
 // pthread_mutex_t lock;
 pthread_mutex_t lock_queue;
@@ -58,6 +62,35 @@ int main(int argc, char** argv)
         perror("mmap");
         return 1;
     }
+
+    //setup hashtable
+    
+    if (!htab_init(&h, buckets))
+    {
+        perror("failed to initialise hash table\n");
+        return 1;
+    }
+    //Setup file reader
+    FILE *fp;
+    size_t len = 10;
+    char *line;
+    size_t read;
+    if((fp = fopen("plates.txt", "r")) == NULL) {
+        perror("fopen\n");
+        return 1;
+    }
+    if((line = (char *)malloc(len * sizeof(char))) == NULL) {
+        perror("Unable to allocate memory for line\n");
+        exit(2);
+    }
+    //Read plates.txt per line and store in hashtable
+    while((read = getline(&line, &len, fp)) != -1) { //function
+        char copy[read];
+        strncpy(copy, line, read - 2);
+        htab_add(&h, copy, 0, 0);
+    }
+    free(line);
+    fclose(fp);
 
     // set threads
     pthread_t temp_sensor_thread;
