@@ -2,207 +2,121 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
-#include "linkedlist.h"
+#include "linkedlist2.h"
 
-node_t* newNode(car_t* car)
+/* Given a reference (pointer to pointer) to the head
+   of a list and an int, appends a new node at the end  */
+void append(struct Node** head_ref, struct car* new_data)
 {
-    node_t* temp = (node_t*)malloc(sizeof(node_t));
-    temp->car = car;
-    temp->next = NULL;
-    return temp;
+    /* 1. allocate node */
+    struct Node* new_node = (struct Node*) malloc(sizeof(struct Node));
+ 
+    struct Node *last = *head_ref;  /* used in step 5*/
+  
+    /* 2. put in the data  */
+    new_node->data  = new_data;
+ 
+    /* 3. This new node is going to be the last node, so make next
+          of it as NULL*/
+    new_node->next = NULL;
+ 
+    /* 4. If the Linked List is empty, then make the new node as head */
+    if (*head_ref == NULL)
+    {
+       *head_ref = new_node;
+       return;
+    } 
+      
+    /* 5. Else traverse till the last node */
+    while (last->next != NULL)
+        last = last->next;
+  
+    /* 6. Change the next of last node */
+    last->next = new_node;
+    return;   
 }
 
-queue_t* createQueue()
+void deleteNode(struct Node** head_ref, char* key)
 {
-    queue_t* q = (queue_t*)malloc(sizeof(queue_t));
-    q->front = q->rear = NULL;
-    return q;
-}
-
-void addCar(queue_t* q, car_t* car)
-{
-    
-    // Create a new LL node
-    node_t* temp = newNode(car);
-
-    // If queue is empty, then new node is front and rear both
-    if (q->rear == NULL) {
-        q->front = q->rear = temp;
+    // Store head node
+    struct Node *temp = *head_ref, *prev;
+    // If head node itself holds the key to be deleted
+    if (temp != NULL && (strcmp(temp->data->rego, key) == 0)) {
+        *head_ref = temp->next; // Changed head
+        free(temp); // free old head
         return;
     }
-
-    // Add the new node at the end of queue and change rear
-    q->rear->next = temp;
-    q->rear = temp;
-}
-
-void removeCar(queue_t* q)
-{
-    // If queue is empty, return NULL.
-    if (q->front == NULL)
-        return;
-
-    // Store previous front and move front one node ahead
-    node_t* temp = q->front;
-
-    q->front = q->front->next;
-
-    // If front becomes NULL, then change rear also as NULL
-    if (q->front == NULL)
-        q->rear = NULL;
-
-    free(temp);
-}
-
-bool findCarRego(queue_t* q, char* rego)
-{
-    node_t* temp;
-    temp = q->front;
-
-    while (temp != NULL)
-    {
-        if (strcmp(temp->car->rego, rego) == 0)
-        {
-            return true;
-        }
-
+ 
+    // Search for the key to be deleted, keep track of the
+    // previous node as we need to change 'prev->next'
+    while (temp != NULL && (strcmp(temp->data->rego, key) != 0)) {
+        prev = temp;
         temp = temp->next;
     }
-
-    return false;
+ 
+    // If key was not present in linked list
+    if (temp == NULL)
+        return;
+ 
+    // Unlink the node from linked list
+    prev->next = temp->next;
+ 
+    free(temp); // Free memory
 }
 
-int listCount(queue_t* q)
+// This function prints contents of linked list starting from head
+void printList(struct Node *node)
+{
+    while (node != NULL)
+    {
+        printf(" %s \n", node->data->rego);
+        node = node->next;
+    }
+}
+
+int listCount(struct Node *node)
 {
     int count = 0;
-
-    node_t* temp;
-    temp = q->front;
-
-    while (temp != NULL)
+    while (node != NULL)
     {
-        temp = temp->next;
-        count ++;
+        count++;
+        node = node->next;
     }
-
     return count;
 }
 
-void removeCarRego(node_t** head, car_t* car)
+car_t* searchEntry(struct Node* head, int x)
 {
-
-    node_t* previous = NULL;
-    node_t* current = *head;
-
-    // if head contains item
-    if (current != NULL && (strcmp(current->car->rego, car->rego) == 0))
-    {
-        *head = current->next;
-        free(current);
-        return;
-    }
-
-    // search for first occurance of rego and remove it
-    while (current != NULL && (strcmp(current->car->rego, car->rego) != 0))
-    {
-        previous = current;
-        current = current->next;
-    }
-
-    // rego is not in list
-    if (current == NULL)
-        return;
-
-    // unlink node from list
-    previous->next = current->next;
-
-    free(current);
-
-    /*
-
+    struct Node* current = head;  // Initialize current
     while (current != NULL)
     {
-
-        if (strcmp(current->car->rego, car->rego) == 0)
-        {
-
-            
-            node_t* newhead = head;
-            if (previous == NULL) // first item in list
-                newhead = current->next;
-            else
-            {
-                if (current->next == NULL) // last item in list
-                    if (previous !=NULL)
-                    {
-                        free(current);
-                        previous->next = NULL;
-                        return previous;
-                    }
-                    else
-                    {
-                        free(current);
-                        return head;
-                    }
-                
-                previous->next = current->next;
-            }
-
-            free(current);
-            return newhead;
-        }
-        previous = current;
-
+        if (current->data->entry == x)
+            return current->data;
         current = current->next;
     }
-
-    return head;
-    */
-}
-
-// q->start = removeCarRego(q, car);
-
-car_t* findFirstCarEntry(queue_t* q, int entry)
-{
-    node_t* temp;
-    temp = q->front;
-
-    while (temp != NULL)
-    {
-        if (temp->car->entry == entry)
-        {
-            return temp->car;
-        }
-
-        temp = temp->next;
-    }
-
     return NULL;
 }
 
-car_t* findFirstCarExit(queue_t** q, int exit)
+car_t* searchExit(struct Node* head, int x)
 {
-    node_t* temp;
-    temp = (*q)->front;
-
-    while (temp != NULL)
+    struct Node* current = head;  // Initialize current
+    while (current != NULL)
     {
-        if (temp->car->exit == exit)
-        {
-            return temp->car;
-        }
-
-        temp = temp->next;
+        if (current->data->exit == x)
+            return current->data;
+        current = current->next;
     }
-
     return NULL;
 }
 
-
-void printRego(node_t* head)
+bool search(struct Node* head, char* x)
 {
-    for (; head != NULL; head = head->next)
+    struct Node* current = head;  // Initialize current
+    while (current != NULL)
     {
-        printf("%s\n", head->car->rego);
+        if ((strcmp(current->data->rego, x) == 0))
+            return true;
+        current = current->next;
     }
+    return false;
 }
