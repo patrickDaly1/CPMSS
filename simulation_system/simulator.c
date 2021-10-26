@@ -42,7 +42,7 @@ void *car_movement(void *aCar);
 void *boom_gate_exit(void *ptr);
 void *temp_sensor(void);
 
-int main(int argc, char argv)
+int main(int argc, char** argv)
 { 
     /* OPEN SHARED MEMORY */
     shm_fd = shm_open(key, O_CREAT | O_RDWR, 0666);
@@ -110,7 +110,7 @@ int main(int argc, char argv)
         perror("shm_unlink");
     }
 
-    pthread_mutex_destroy(&lock_queue, NULL);
+    pthread_mutex_destroy(&lock_queue);
     for (int i = 0; i < entrys_exits; i++)
     {
 
