@@ -101,6 +101,15 @@ int main(int argc, char** argv)
     /* INITIALISE TEMP SENSOR THREADS */
     //pthread_create(&temp_sensor_thread, NULL, (void *) temp_sensor, NULL);
 
+    //close threads first
+    for (int i = 0; i < entrys_exits; i++)
+    {
+        pthread_cond_destroy(&sharedMem->entrances[i].BG.condition);
+        pthread_mutex_destroy(&sharedMem->entrances[i].BG.lock);
+        pthread_cond_destroy(&sharedMem->exits[i].BG.condition);
+        pthread_mutex_destroy(&sharedMem->exits[i].BG.lock);
+    }
+
     /* CLOSE SHARED MEMORY */
     if (munmap(sharedMem, shmSize) != 0) {
         perror("munmap");
@@ -111,15 +120,7 @@ int main(int argc, char** argv)
     }
 
     pthread_mutex_destroy(&lock_queue);
-    for (int i = 0; i < entrys_exits; i++)
-    {
-
-        pthread_cond_destroy(&sharedMem->entrances[i].BG.condition);
-        pthread_mutex_destroy(&sharedMem->entrances[i].BG.lock);
-        pthread_cond_destroy(&sharedMem->exits[i].BG.condition);
-        pthread_mutex_destroy(&sharedMem->exits[i].BG.lock);
-    }
-
+    
     pthread_mutexattr_destroy(&mattr);
     pthread_condattr_destroy(&cattr);
 }
