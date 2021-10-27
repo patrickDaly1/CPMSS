@@ -98,10 +98,14 @@ int findFreeLevel(mem_t *mem) {
 
 void bgEntrance(shm *sharedMem, int typeIndex) {
     printf("Boom gate opening at %d\n", typeIndex);
+    usleep(2000);
+    printf("Boom %d status 1: %c\n", typeIndex, sharedMem->entrances[typeIndex].BG.status);
     pthread_mutex_lock(&(sharedMem->entrances[typeIndex].BG.lock));
     sharedMem->entrances[typeIndex].BG.status = 'R';
     pthread_cond_signal(&(sharedMem->entrances[typeIndex].BG.condition));
     pthread_mutex_unlock(&(sharedMem->entrances[typeIndex].BG.lock));
+
+    //printf("Boom %d status 2: %c\n", typeIndex, sharedMem->entrances[typeIndex].BG.status);
     
 
     // wait for sim to change it to open
@@ -113,16 +117,19 @@ void bgEntrance(shm *sharedMem, int typeIndex) {
         // Hasn't opened properly
         pthread_mutex_unlock(&(sharedMem->entrances[typeIndex].BG.lock));
         perror("Error raising boom gate for entrance\n");
-        exit(1);
+        //exit(1);
     }
     pthread_mutex_unlock(&(sharedMem->entrances[typeIndex].BG.lock));
+    
     // BG opened, wait 5ms?
     usleep(5000);
     // close boom gate
+    //printf("Boom %d status 3: %c\n", typeIndex, sharedMem->entrances[typeIndex].BG.status);
     pthread_mutex_lock(&(sharedMem->entrances[typeIndex].BG.lock));
     sharedMem->entrances[typeIndex].BG.status = 'L';
     pthread_cond_signal(&(sharedMem->entrances[typeIndex].BG.condition));
     pthread_mutex_unlock(&(sharedMem->entrances[typeIndex].BG.lock));
+    //printf("Boom %d status 3: %c\n", typeIndex, sharedMem->entrances[typeIndex].BG.status);
 
     // check BG is closed
     pthread_mutex_lock(&(sharedMem->entrances[typeIndex].BG.lock));
@@ -138,30 +145,36 @@ void bgEntrance(shm *sharedMem, int typeIndex) {
 }
 
 void bgExit(shm *sharedMem, int typeIndex) {
+    usleep(2000);
+    //printf("Boom %d status 1: %c\n", typeIndex, sharedMem->exits[typeIndex].BG.status);
     pthread_mutex_lock(&(sharedMem->exits[typeIndex].BG.lock));
     sharedMem->exits[typeIndex].BG.status = 'R';
     pthread_cond_signal(&(sharedMem->exits[typeIndex].BG.condition));
     pthread_mutex_unlock(&(sharedMem->exits[typeIndex].BG.lock));
 
+    
     // wait for sim to change it to open
     pthread_mutex_lock(&(sharedMem->exits[typeIndex].BG.lock));
     pthread_cond_wait(&(sharedMem->exits[typeIndex].BG.condition), &(sharedMem->exits[typeIndex].BG.lock));
+    //printf("Boom %d status 2: %c\n", typeIndex, sharedMem->exits[typeIndex].BG.status);
     // check changed to right value (check this is how condition var works)
     if (sharedMem->exits[typeIndex].BG.status != 'O')
     {
         // Hasn't opened properly
         pthread_mutex_unlock(&(sharedMem->exits[typeIndex].BG.lock));
-        perror("Error raising boom gate for entrance\n");
+        perror("Error raising boom gate for exit\n");
         exit(1);
     }
     pthread_mutex_unlock(&(sharedMem->exits[typeIndex].BG.lock));
     // BG opened, wait 5ms?
     usleep(5000);
+    //printf("Boom %d status 3: %c\n", typeIndex, sharedMem->exits[typeIndex].BG.status);
     // close boom gate
     pthread_mutex_lock(&(sharedMem->exits[typeIndex].BG.lock));
     sharedMem->exits[typeIndex].BG.status = 'L';
     pthread_cond_signal(&(sharedMem->exits[typeIndex].BG.condition));
     pthread_mutex_unlock(&(sharedMem->exits[typeIndex].BG.lock));
+    //printf("Boom %d status 4: %c\n", typeIndex, sharedMem->exits[typeIndex].BG.status);
 
     // check BG is closed
     pthread_mutex_lock(&(sharedMem->exits[typeIndex].BG.lock));
@@ -170,9 +183,10 @@ void bgExit(shm *sharedMem, int typeIndex) {
     {
         // Hasn't opened properly
         pthread_mutex_unlock(&(sharedMem->exits[typeIndex].BG.lock));
-        perror("Error closing boom gate for entrance\n");
+        perror("Error closing boom gate for exit\n");
         exit(1);
     }
+    //printf("Boom %d status 5: %c\n", typeIndex, sharedMem->exits[typeIndex].BG.status);
     pthread_mutex_unlock(&(sharedMem->exits[typeIndex].BG.lock));
 }
 
@@ -233,6 +247,7 @@ void *miniManagerExit(void *arg) {
         item_t *car = htab_find(info->mem->h, sharedMem->exits[lprNum].LPR.rego);
         long timeEntered = car->timeEntered;
         double bill = (getTimeMilli() - timeEntered) * 0.05;
+        
         //save into file
         fprintf(fp, "%s %.2f\n", sharedMem->exits[lprNum].LPR.rego, bill);
         //decrement previous level and overall capacity, increase revenue
@@ -282,11 +297,9 @@ void *miniManagerEntrance(void *arg) {
             //exists in list and car park not full
             htab_change_time(info->mem->h, sharedMem->entrances[lprNum].LPR.rego, getTimeMilli());
             pthread_mutex_lock(&(sharedMem->entrances[lprNum].SIGN.lock));
-            printf("here 1\n");
 
             pthread_mutex_unlock(&mem_lock);
             sharedMem->entrances[lprNum].SIGN.display = findFreeLevel(info->mem) + '0'; //converts int to char for 0-9
-            printf("here 2\n");
             pthread_cond_signal(&(sharedMem->entrances[lprNum].SIGN.condition));
             pthread_mutex_unlock(&(sharedMem->entrances[lprNum].SIGN.lock));
             

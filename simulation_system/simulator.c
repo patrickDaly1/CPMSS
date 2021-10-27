@@ -12,7 +12,7 @@
 #include "hashtable.h"
 
 #define entrys_exits 5
-#define levels 5
+#define num_levels 5
 #define cars_per_level 20
 
 
@@ -125,7 +125,15 @@ int main(int argc, char** argv)
         pthread_mutex_init(&sharedMem->exits[i].BG.lock, &mattr);
         pthread_mutex_init(&sharedMem->exits[i].LPR.lock, &mattr);
 
+        
+
         //initialise levels
+    }
+
+    for (int i = 0; i < num_levels; i++)
+    {
+        pthread_mutex_init(&sharedMem->levels[i].LPR.lock, &mattr);
+        pthread_cond_init(&sharedMem->levels[i].LPR.condition, &cattr);
     }
 
     sleep(5);
@@ -338,27 +346,29 @@ void *boom_gate_entry(void *ptr)
                     printf("Error raising boom entry: %d\n", entry);
                 }
                 usleep(10000); // open boom gate
-                printf("Boom %d status 2: %c\n", entry, sharedMem->entrances[entry].BG.status);
+                //printf("Boom %d status 2: %c\n", entry, sharedMem->entrances[entry].BG.status);
 
                 pthread_mutex_lock(&(sharedMem->entrances[entry].BG.lock));
                 sharedMem->entrances[entry].BG.status = 'O';
                 pthread_cond_signal(&sharedMem->entrances[entry].BG.condition);
                 pthread_mutex_unlock(&(sharedMem->entrances[entry].BG.lock));
 
-                printf("Boom %d status 3: %c\n", entry, sharedMem->entrances[entry].BG.status);
+                //printf("Boom %d status 3: %c\n", entry, sharedMem->entrances[entry].BG.status);
 
                 pthread_mutex_lock(&lock_queue);
+                curr_car->parking = (int)(sharedMem->entrances[entry].SIGN.display) - 48;
                 append(&inCarpark, curr_car);
                 deleteNode(&entryQueue, curr_car->rego);
                 carsEntered++;
                 pthread_mutex_unlock(&lock_queue);
-                printf("entry: %d, carpark: %d, exit: %d\n", listCount(entryQueue), listCount(inCarpark), listCount(exitQueue));
-
+                //printf("entry: %d, carpark: %d, exit: %d\n", listCount(entryQueue), listCount(inCarpark), listCount(exitQueue));
                 /* CREATE NEW CAR THREAD */
                 pthread_t car;
                 void * arg = malloc(sizeof(car_t));
                 arg = curr_car;
                 pthread_create(&car, NULL, car_movement, arg); 
+
+                //printf("Boom %d status 4: %c\n", entry, sharedMem->entrances[entry].BG.status);
 
                 pthread_mutex_lock(&(sharedMem->entrances[entry].BG.lock));
                 pthread_cond_wait(&sharedMem->entrances[entry].BG.condition, &(sharedMem->entrances[entry].BG.lock));
@@ -368,11 +378,13 @@ void *boom_gate_entry(void *ptr)
                 }
                 
                 usleep(10000); // close boom gate
+                //printf("Boom %d status 5: %c\n", entry, sharedMem->entrances[entry].BG.status);
 
                 pthread_mutex_lock(&(sharedMem->entrances[entry].BG.lock));
                 sharedMem->entrances[entry].BG.status = 'C';
                 pthread_cond_signal(&sharedMem->entrances[entry].BG.condition);
                 pthread_mutex_unlock(&(sharedMem->entrances[entry].BG.lock));
+                //printf("Boom %d status 6: %c\n", entry, sharedMem->entrances[entry].BG.status);
                 
             }
         }
@@ -423,6 +435,7 @@ void *boom_gate_exit(void *ptr)
             pthread_cond_signal(&(sharedMem->exits[exit].LPR.condition));
             pthread_mutex_unlock(&(sharedMem->exits[exit].LPR.lock));
             
+            //printf("Boom %d status 1: %c\n", exit, sharedMem->exits[exit].BG.status);
             pthread_mutex_lock(&(sharedMem->exits[exit].BG.lock));
             pthread_cond_wait(&sharedMem->exits[exit].BG.condition, &(sharedMem->exits[exit].BG.lock));
             pthread_mutex_unlock(&(sharedMem->exits[exit].BG.lock));
@@ -433,9 +446,10 @@ void *boom_gate_exit(void *ptr)
             usleep(10000); // open boom gate
 
             pthread_mutex_lock(&(sharedMem->exits[exit].BG.lock));
-            sharedMem->entrances[exit].BG.status = 'O';
+            sharedMem->exits[exit].BG.status = 'O';
             pthread_cond_signal(&sharedMem->exits[exit].BG.condition);
             pthread_mutex_unlock(&(sharedMem->exits[exit].BG.lock));
+            //printf("Boom %d status 2: %c\n", exit, sharedMem->exits[exit].BG.status);
 
             pthread_mutex_lock(&lock_queue);
             deleteNode(&exitQueue, curr_car->rego);
@@ -454,7 +468,7 @@ void *boom_gate_exit(void *ptr)
             usleep(10000); // close boom gate   
 
             pthread_mutex_lock(&(sharedMem->exits[exit].BG.lock));
-            sharedMem->entrances[exit].BG.status = 'C';
+            sharedMem->exits[exit].BG.status = 'C';
             pthread_cond_signal(&sharedMem->exits[exit].BG.condition);
             pthread_mutex_unlock(&(sharedMem->exits[exit].BG.lock));  
 
@@ -482,6 +496,11 @@ void *car_movement(void *aCar)
     car_t* currCar= ((car_t *)aCar);
     usleep(10000); // travel to parking
 
+    pthread_mutex_lock(&sharedMem->levels[currCar->parking].LPR.lock);
+    strcpy(sharedMem->levels[currCar->parking].LPR.rego, currCar->rego);
+    pthread_cond_signal(&sharedMem->levels[currCar->parking].LPR.condition);
+    pthread_mutex_unlock(&sharedMem->levels[currCar->parking].LPR.lock);
+
     usleep(((rand() % 900) + 101) * 1000);
 
     currCar->exit = rand() % entrys_exits;
@@ -495,9 +514,14 @@ void *car_movement(void *aCar)
     pthread_mutex_unlock(&lock_queue);
     printf("entry: %d, carpark: %d, exit: %d\n", listCount(entryQueue), listCount(inCarpark), listCount(exitQueue));
 
-    pthread_mutex_lock(&sharedMem->exits[currCar->exit].BG.lock);
-    pthread_cond_signal(&sharedMem->exits[currCar->exit].BG.condition);
-    pthread_mutex_unlock(&sharedMem->exits[currCar->exit].BG.lock);
+    pthread_mutex_lock(&sharedMem->levels[currCar->parking].LPR.lock);
+    strcpy(sharedMem->levels[currCar->parking].LPR.rego, currCar->rego);
+    pthread_cond_signal(&sharedMem->levels[currCar->parking].LPR.condition);
+    pthread_mutex_unlock(&sharedMem->levels[currCar->parking].LPR.lock);
+
+    // pthread_mutex_lock(&sharedMem->exits[currCar->exit].BG.lock);
+    // pthread_cond_signal(&sharedMem->exits[currCar->exit].BG.condition);
+    // pthread_mutex_unlock(&sharedMem->exits[currCar->exit].BG.lock);
     
 
     return 0;
