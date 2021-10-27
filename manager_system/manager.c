@@ -97,7 +97,7 @@ int findFreeLevel(mem_t *mem) {
 }
 
 void bgEntrance(shm *sharedMem, int typeIndex) {
-    printf("Boom gate opening at %d", typeIndex);
+    printf("Boom gate opening at %d\n", typeIndex);
     pthread_mutex_lock(&(sharedMem->entrances[typeIndex].BG.lock));
     sharedMem->entrances[typeIndex].BG.status = 'R';
     pthread_cond_signal(&(sharedMem->entrances[typeIndex].BG.condition));
@@ -112,7 +112,7 @@ void bgEntrance(shm *sharedMem, int typeIndex) {
     {
         // Hasn't opened properly
         pthread_mutex_unlock(&(sharedMem->entrances[typeIndex].BG.lock));
-        perror("Error raising boom gate for entrance");
+        perror("Error raising boom gate for entrance\n");
         exit(1);
     }
     pthread_mutex_unlock(&(sharedMem->entrances[typeIndex].BG.lock));
@@ -131,7 +131,7 @@ void bgEntrance(shm *sharedMem, int typeIndex) {
     {
         // Hasn't closed properly
         pthread_mutex_unlock(&(sharedMem->entrances[typeIndex].BG.lock));
-        perror("Error closing boom gate for entrance");
+        perror("Error closing boom gate for entrance\n");
         exit(1);
     }
     pthread_mutex_unlock(&(sharedMem->entrances[typeIndex].BG.lock));
@@ -151,7 +151,7 @@ void bgExit(shm *sharedMem, int typeIndex) {
     {
         // Hasn't opened properly
         pthread_mutex_unlock(&(sharedMem->exits[typeIndex].BG.lock));
-        perror("Error raising boom gate for entrance");
+        perror("Error raising boom gate for entrance\n");
         exit(1);
     }
     pthread_mutex_unlock(&(sharedMem->exits[typeIndex].BG.lock));
@@ -170,7 +170,7 @@ void bgExit(shm *sharedMem, int typeIndex) {
     {
         // Hasn't opened properly
         pthread_mutex_unlock(&(sharedMem->exits[typeIndex].BG.lock));
-        perror("Error closing boom gate for entrance");
+        perror("Error closing boom gate for entrance\n");
         exit(1);
     }
     pthread_mutex_unlock(&(sharedMem->exits[typeIndex].BG.lock));
@@ -262,6 +262,7 @@ void *miniManagerEntrance(void *arg) {
         pthread_mutex_unlock(&(sharedMem->entrances[lprNum].LPR.lock));
         pthread_mutex_lock(&mem_lock);
         printf("Rego read: %s\n", sharedMem->entrances[lprNum].LPR.rego);
+        printf("Rego found: %s\n", htab_find(info->mem->h, sharedMem->entrances[lprNum].LPR.rego)->rego);
         //Check if rego in list and if car park full
         if(htab_find(info->mem->h, sharedMem->entrances[lprNum].LPR.rego) == NULL) {
             //doesn't exist in list
@@ -409,11 +410,14 @@ int main(void) {
     //Read plates.txt per line and store in hashtable
     while((read = getline(&line, &len, fp)) != -1) { //function
         char copy[read];
-        strncpy(copy, line, read - 2);
+        strncpy(copy, line, read - 1);
         htab_add(&h, copy, 0, 0);
     }
     free(line);
     fclose(fp);
+
+    //htab_print(&h);
+
     //allocate memory for capacity and billed money (cents) - maybe make struct for this
     mem_t *info = (mem_t *)malloc(sizeof(mem_t)); //function
     info->billing = 0;

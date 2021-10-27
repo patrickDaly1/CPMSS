@@ -242,6 +242,7 @@ car_t *car_init(void)
 
             return new_car;
         }
+
     }
 }
 
@@ -255,7 +256,8 @@ car_t *car_init(void)
  
 void *car_queuer(void *arg)
 {
-    for(int i = 0; i < 10; i++)
+    for(int i = 0; i < 20; i++)
+    //for(;;)
     {
         // initialise new car and add to queue
         pthread_mutex_lock(&lock_queue);
@@ -328,7 +330,7 @@ void *boom_gate_entry(void *ptr)
             }
             else
             {
-                printf("here 2 %d\n", entry);
+                printf("Boom %d status 1: %c\n", entry, sharedMem->entrances[entry].BG.status);
                 pthread_mutex_lock(&(sharedMem->entrances[entry].BG.lock));
                 pthread_cond_wait(&sharedMem->entrances[entry].BG.condition, &(sharedMem->entrances[entry].BG.lock));
                 pthread_mutex_unlock(&(sharedMem->entrances[entry].BG.lock));
@@ -336,11 +338,14 @@ void *boom_gate_entry(void *ptr)
                     printf("Error raising boom entry: %d\n", entry);
                 }
                 usleep(10000); // open boom gate
+                printf("Boom %d status 2: %c\n", entry, sharedMem->entrances[entry].BG.status);
 
                 pthread_mutex_lock(&(sharedMem->entrances[entry].BG.lock));
                 sharedMem->entrances[entry].BG.status = 'O';
                 pthread_cond_signal(&sharedMem->entrances[entry].BG.condition);
                 pthread_mutex_unlock(&(sharedMem->entrances[entry].BG.lock));
+
+                printf("Boom %d status 3: %c\n", entry, sharedMem->entrances[entry].BG.status);
 
                 pthread_mutex_lock(&lock_queue);
                 append(&inCarpark, curr_car);

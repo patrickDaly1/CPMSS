@@ -77,6 +77,7 @@ item_t *htab_find(htab_t *h, char *rego)
         { // found the key
             return i;
         }
+        //printf("%s\n", i->rego);
     }
     return NULL;
 }
