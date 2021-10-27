@@ -429,7 +429,7 @@ int main(void) {
     free(line);
     fclose(fp);
 
-    //htab_print(&h);
+    htab_print(&h);
 
     //allocate memory for capacity and billed money (cents) - maybe make struct for this
     mem_t *info = (mem_t *)malloc(sizeof(mem_t)); //function

@@ -20,6 +20,8 @@ struct Node* entryQueue = NULL;
 struct Node* inCarpark = NULL;
 struct Node* exitQueue = NULL;
 
+struct Node* plates = NULL;
+
 size_t buckets = 10;
 htab_t h;
 
@@ -89,8 +91,12 @@ int main(int argc, char** argv)
     //Read plates.txt per line and store in hashtable
     while((read = getline(&line, &len, fp)) != -1) { //function
         char copy[read];
-        strncpy(copy, line, read - 2);
+        strncpy(copy, line, read - 1);
         htab_add(&h, copy);
+
+        car_t *new_car = (car_t *)malloc(sizeof(car_t));
+        strcpy(new_car->rego, copy);
+        append(&plates, new_car);
     }
     free(line);
     fclose(fp);
@@ -207,6 +213,7 @@ car_t *car_init(void)
     // create new car structure
     car_t *new_car = (car_t *)malloc(sizeof(car_t));
 
+
     // generate random rego values
     int odds = rand() % 2;
 
@@ -215,9 +222,11 @@ car_t *car_init(void)
     //printf("%d\n", new_car->entry);
     for (;;)
     {
-        if(odds == -1)
+        if(odds == 0)
         {
-            strcpy(new_car->rego, "137JEG");
+            
+            deleteNode(&plates, plates->data->rego);
+            strcpy(new_car->rego, plates->data->rego);
         }
         else
         {
@@ -331,7 +340,7 @@ void *boom_gate_entry(void *ptr)
             printf("sign display entry %d: %c\n", entry, sharedMem->entrances[entry].SIGN.display);
             if ((sharedMem->entrances[entry].SIGN.display == 'X') || (sharedMem->entrances[entry].SIGN.display == 'F') || (&sharedMem->entrances[entry].SIGN.display == NULL))
             {
-                printf("here 1 %d\n", entry);
+                //printf("here 1 %d\n", entry);
                 pthread_mutex_lock(&lock_queue);
                 deleteNode(&entryQueue, curr_car->rego);
                 pthread_mutex_unlock(&lock_queue);
