@@ -11,38 +11,30 @@
 #include "../shared_memory/sharedMemory.h"
 #include "hashtable.h"
 
+/* Define carpark constraints */
 #define entrys_exits 5
 #define num_levels 5
 #define cars_per_level 20
 
-
+/* Creat head to linked lists */
 struct Node* entryQueue = NULL;
 struct Node* inCarpark = NULL;
 struct Node* exitQueue = NULL;
-
 struct Node* plates = NULL;
 
-size_t buckets = 10;
-htab_t h;
-
-// pthread_mutex_t lock;
-pthread_mutex_t lock_queue;
+/* Shared memory values */
 size_t shmSize = 2920;
-// pthread_cond_t boom_gate_entry_signal[entrys_exits];
-// pthread_mutex_t boom_gate_entry_lock[entrys_exits];
-// pthread_cond_t boom_gate_exit_signal[entrys_exits];
-// pthread_mutex_t boom_gate_exit_lock[entrys_exits];
-
-// int boom_gate_entry_signaled[entrys_exits];
-// int boom_gate_exit_signaled[entrys_exits];
 int shm_fd;
 shm *sharedMem;
 const char *key = "PARKING";
 
+/* Other variables */
+pthread_mutex_t lock_queue;
 char lastRego[6] = "029MZH";
-
 int carsEntered, carsParked, carsExited, added;
 
+
+/* Initialise functions*/
 car_t *car_init(void);
 void *car_queuer(void *arg);
 void *boom_gate_entry(void *ptr);
@@ -67,14 +59,7 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    //setup hashtable
-    
-    if (!htab_init(&h, buckets))
-    {
-        perror("failed to initialise hash table\n");
-        return 1;
-    }
-
+    /* Read in plates.txt */
     //Setup file reader
     FILE *fp;
     size_t len = 10;
@@ -92,8 +77,8 @@ int main(int argc, char** argv)
     while((read = getline(&line, &len, fp)) != -1) { //function
         char copy[read];
         strncpy(copy, line, read - 1);
-        htab_add(&h, copy);
 
+        // add to linked list
         car_t *new_car = (car_t *)malloc(sizeof(car_t));
         strcpy(new_car->rego, copy);
         append(&plates, new_car);
@@ -101,12 +86,13 @@ int main(int argc, char** argv)
     free(line);
     fclose(fp);
 
-    // set threads
+    /* Create thread variables */
     pthread_t temp_sensor_thread;
     pthread_t car_init_thread;
     pthread_t boom_gate_entry_thread[entrys_exits];
     pthread_t boom_gate_exit_thread[entrys_exits];
 
+    /* Initialise mattr & cattr */
     pthread_mutexattr_t mattr;
     pthread_mutexattr_init(&mattr);
     pthread_mutexattr_setpshared(&mattr, PTHREAD_PROCESS_SHARED);
@@ -114,6 +100,7 @@ int main(int argc, char** argv)
     pthread_condattr_init(&cattr);
     pthread_condattr_setpshared(&cattr, PTHREAD_PROCESS_SHARED);
 
+    /* Initialise conditions and mutexes for each enterence and exit */
     pthread_mutex_init(&lock_queue, NULL);
     for (int i = 0; i < entrys_exits; i++)
     {
@@ -136,13 +123,14 @@ int main(int argc, char** argv)
         //initialise levels
     }
 
+    /* Initialise conditions and mutexes for each level */
     for (int i = 0; i < num_levels; i++)
     {
         pthread_mutex_init(&sharedMem->levels[i].LPR.lock, &mattr);
         pthread_cond_init(&sharedMem->levels[i].LPR.condition, &cattr);
     }
 
-    sleep(5);
+    sleep(5); // sleep statement to sync manager
 
     /* INITIALISE CAR GENERATING THREAD */
     pthread_create(&car_init_thread, NULL, car_queuer, NULL); 
@@ -163,7 +151,7 @@ int main(int argc, char** argv)
     /* INITIALISE TEMP SENSOR THREADS */
     pthread_create(&temp_sensor_thread, NULL, temp_sensor, NULL);
 
-    //Joining threads for car creation, boom gates and temperature sensor
+    /* Join threads */
     pthread_join(car_init_thread, NULL);
     pthread_join(temp_sensor_thread, NULL);
     for (int i = 0; i < entrys_exits; i++)
@@ -213,23 +201,21 @@ car_t *car_init(void)
     // create new car structure
     car_t *new_car = (car_t *)malloc(sizeof(car_t));
 
-
-    // generate random rego values
+    // odds for picking rego from plates.txt
     int odds = rand() % 2;
 
-    // create random probability of guarenteed entry
+    // create random entry for car
     new_car->entry = rand() % entrys_exits;
-    //printf("%d\n", new_car->entry);
     for (;;)
     {
-        if(odds == 0)
+        if(odds == 0) // from plates.txt
         {
-            
             deleteNode(&plates, plates->data->rego);
             strcpy(new_car->rego, plates->data->rego);
         }
-        else
+        else // generate random
         {
+            // generate 3 random chars and numbers
             for(int i = 0; i < 3; i++)
             {
                 new_car->rego[i + 3] = (char)((rand() % 26) + 65);
@@ -241,8 +227,6 @@ car_t *car_init(void)
         if (entryQueue == NULL)
         {
             // signal that new car has been added to specific entry
-            // boom_gate_entry_signaled[new_car->entry] = true;
-
             pthread_mutex_lock(&(sharedMem->entrances[new_car->entry].BG.lock));
             pthread_cond_signal(&(sharedMem->entrances[new_car->entry].BG.condition));
             pthread_mutex_unlock(&(sharedMem->entrances[new_car->entry].BG.lock));
@@ -282,6 +266,7 @@ void *car_queuer(void *arg)
         added++;
         pthread_mutex_unlock(&lock_queue);
         printf("entry: %d, carpark: %d, exit: %d\n", listCount(entryQueue), listCount(inCarpark), listCount(exitQueue));
+        
         // sleep for 1 - 100 ms
         usleep(((rand() % 100) + 1) * 1000);    
     }
@@ -305,9 +290,7 @@ void *car_queuer(void *arg)
 void *boom_gate_entry(void *ptr)
 {
     
-    int entry = *((int *)ptr);
-    //int entry = 2;
-    //printf("%d @ 2\n", entry);
+    int entry = *((int *)ptr); // entry number for boom gate
 
     // loop infinately
     for(;;)
@@ -325,13 +308,13 @@ void *boom_gate_entry(void *ptr)
         
         if ((curr_car != NULL))
         {
-            // *** PASS REGO TO CORRECT LPR
-            
+            /* Pass rego to LPR */
             pthread_mutex_lock(&(sharedMem->entrances[entry].LPR.lock));
             strcpy(sharedMem->entrances[entry].LPR.rego, curr_car->rego);
             pthread_cond_signal(&(sharedMem->entrances[entry].LPR.condition));
             pthread_mutex_unlock(&(sharedMem->entrances[entry].LPR.lock));
-            
+
+            /* Wait wait for manager to update sign */
             pthread_mutex_lock(&(sharedMem->entrances[entry].SIGN.lock));
             pthread_cond_wait(&(sharedMem->entrances[entry].SIGN.condition), &(sharedMem->entrances[entry].SIGN.lock));
             pthread_mutex_unlock(&(sharedMem->entrances[entry].SIGN.lock));
@@ -340,7 +323,6 @@ void *boom_gate_entry(void *ptr)
             printf("sign display entry %d: %c\n", entry, sharedMem->entrances[entry].SIGN.display);
             if ((sharedMem->entrances[entry].SIGN.display == 'X') || (sharedMem->entrances[entry].SIGN.display == 'F') || (&sharedMem->entrances[entry].SIGN.display == NULL))
             {
-                //printf("here 1 %d\n", entry);
                 pthread_mutex_lock(&lock_queue);
                 deleteNode(&entryQueue, curr_car->rego);
                 pthread_mutex_unlock(&lock_queue);
