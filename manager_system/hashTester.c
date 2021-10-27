@@ -49,7 +49,7 @@ int main(void) {
     int level = 1;
     while((read = getline(&line, &len, fp)) != -1) {
         char copy[read];
-        strncpy(copy, line, read - 2);
+        strncpy(copy, line, read - 1);
         htab_add(&h, copy, 0, level);
         if(level >= 5) {    
             level = 0;
@@ -58,11 +58,24 @@ int main(void) {
         }
     }
 
+    htab_print(&h);
+
+    if(htab_find(&h, "927KOB") == NULL) {
+        printf("1 didn't work\n");
+    }
+    char rego[] = "927KOB";
+    if(htab_find(&h, rego) == NULL) {
+        printf("2 didn't work\n");
+    }
+    char *rego2 = "927KOB\n";
+    if(htab_find(&h, rego2) == NULL) {
+        printf("3 didn't work\n");
+    }
     //close
     fclose(fp);
     free(line);
 
-    htab_print(&h);
+    //htab_print(&h);
 
     return 0;
 }

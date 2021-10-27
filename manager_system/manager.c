@@ -270,6 +270,11 @@ void *miniManagerEntrance(void *arg) {
     //constantly check shared memory entrance LPR for regos
     int lprNum = info->lprNum;
     shm *sharedMem = info->mem->sharedMem;
+    pthread_mutex_lock(&mem_lock);
+    if(htab_find(info->mem->h, "030DWF") != NULL) {
+        printf("Didn't fail\n");
+    }
+    pthread_mutex_unlock(&mem_lock);
     while(1) {
         //Check allocated lpr - use condition variable and mutex before accesing it
         pthread_mutex_lock(&(sharedMem->entrances[lprNum].LPR.lock));
@@ -277,8 +282,9 @@ void *miniManagerEntrance(void *arg) {
         pthread_mutex_unlock(&(sharedMem->entrances[lprNum].LPR.lock));
         pthread_mutex_lock(&mem_lock);
         printf("Rego read: %s\n", sharedMem->entrances[lprNum].LPR.rego);
-        printf("Rego found: %s\n", htab_find(info->mem->h, sharedMem->entrances[lprNum].LPR.rego)->rego);
+        printf("Rego found: %s\n", (htab_find(info->mem->h, sharedMem->entrances[lprNum].LPR.rego))->rego);
         //Check if rego in list and if car park full
+        //sharedMem->entrances[lprNum].LPR.rego
         if(htab_find(info->mem->h, sharedMem->entrances[lprNum].LPR.rego) == NULL) {
             //doesn't exist in list
             printf("Setting status to 'X' in: %d\n", lprNum);
@@ -429,7 +435,7 @@ int main(void) {
     free(line);
     fclose(fp);
 
-    htab_print(&h);
+    //htab_print(&h);
 
     //allocate memory for capacity and billed money (cents) - maybe make struct for this
     mem_t *info = (mem_t *)malloc(sizeof(mem_t)); //function
