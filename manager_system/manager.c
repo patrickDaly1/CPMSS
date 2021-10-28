@@ -97,9 +97,9 @@ int findFreeLevel(mem_t *mem) {
 }
 
 void bgEntrance(shm *sharedMem, int typeIndex) {
-    printf("Boom gate opening at %d\n", typeIndex);
+    //printf("Boom gate opening at %d\n", typeIndex);
     usleep(2000);
-    printf("Boom %d status 1: %c\n", typeIndex, sharedMem->entrances[typeIndex].BG.status);
+    //printf("Boom %d status 1: %c\n", typeIndex, sharedMem->entrances[typeIndex].BG.status);
     pthread_mutex_lock(&(sharedMem->entrances[typeIndex].BG.lock));
     sharedMem->entrances[typeIndex].BG.status = 'R';
     pthread_cond_signal(&(sharedMem->entrances[typeIndex].BG.condition));
@@ -211,7 +211,9 @@ void *miniManagerLevel(void *arg) {
         pthread_mutex_lock(&mem_lock);
         //new car on level - increment level capacity, if was on previous level - decrement capacity
         ++(info->mem->levelCap[lprNum]);
-        item_t *car = htab_find(info->mem->h, sharedMem->levels[lprNum].LPR.rego);
+        char regoCpy[7];
+        memcpy(regoCpy, sharedMem->levels[lprNum].LPR.rego, 6);
+        item_t *car = htab_find(info->mem->h, regoCpy);
         if(car->levelParked > 0) {
             //has parked on previous level
             --(info->mem->levelCap[car->levelParked - 1]);
@@ -244,7 +246,9 @@ void *miniManagerExit(void *arg) {
         pthread_cond_wait(&(sharedMem->exits[lprNum].LPR.condition), &(sharedMem->exits[lprNum].LPR.lock));
         pthread_mutex_lock(&mem_lock);
         //car leaving, get time spent (current time - time saved)
-        item_t *car = htab_find(info->mem->h, sharedMem->exits[lprNum].LPR.rego);
+        char regoCpy[7];
+        memcpy(regoCpy, sharedMem->exits[lprNum].LPR.rego, 6);
+        item_t *car = htab_find(info->mem->h, regoCpy);
         long timeEntered = car->timeEntered;
         double bill = (getTimeMilli() - timeEntered) * 0.05;
         
@@ -271,9 +275,6 @@ void *miniManagerEntrance(void *arg) {
     int lprNum = info->lprNum;
     shm *sharedMem = info->mem->sharedMem;
     pthread_mutex_lock(&mem_lock);
-    if(htab_find(info->mem->h, "030DWF") != NULL) {
-        printf("Didn't fail\n");
-    }
     pthread_mutex_unlock(&mem_lock);
     while(1) {
         //Check allocated lpr - use condition variable and mutex before accesing it
@@ -281,19 +282,19 @@ void *miniManagerEntrance(void *arg) {
         pthread_cond_wait(&(sharedMem->entrances[lprNum].LPR.condition), &(sharedMem->entrances[lprNum].LPR.lock));
         pthread_mutex_unlock(&(sharedMem->entrances[lprNum].LPR.lock));
         pthread_mutex_lock(&mem_lock);
-        printf("Rego read: %s\n", sharedMem->entrances[lprNum].LPR.rego);
+        //printf("Rego read: %s\n", sharedMem->entrances[lprNum].LPR.rego);
         //printf("%ld", sizeof(sharedMem->entrances[lprNum].LPR.rego) / sizeof(char));
-        printf("Rego found: %s\n", (htab_find(info->mem->h, sharedMem->entrances[lprNum].LPR.rego))->rego);
+        //printf("Rego found: %s\n", (htab_find(info->mem->h, sharedMem->entrances[lprNum].LPR.rego))->rego);
         //Check if rego in list and if car park full
         //sharedMem->entrances[lprNum].LPR.rego
         //copy string into char[]
-        char regoCpy[6];
-        strcpy(regoCpy, sharedMem->entrances[lprNum].LPR.rego);
-        printf("Rego copy: %s\n", regoCpy);
-        if(htab_find(info->mem->h, sharedMem->entrances[lprNum].LPR.rego) == NULL) {
-        // if(htab_find(info->mem->h, regoCpy) == NULL) {
+        char regoCpy[7];
+        memcpy(regoCpy, sharedMem->entrances[lprNum].LPR.rego, 6);
+        //printf("Rego copy: %s\n", regoCpy);
+        // if(htab_find(info->mem->h, sharedMem->entrances[lprNum].LPR.rego) == NULL) {
+        if(htab_find(info->mem->h, regoCpy) == NULL) {
             //doesn't exist in list
-            printf("Setting status to 'X' in: %d\n", lprNum);
+            // printf("Setting status to 'X' in: %d\n", lprNum);
             pthread_mutex_lock(&(sharedMem->entrances[lprNum].SIGN.lock));
             sharedMem->entrances[lprNum].SIGN.display = 'X';
             pthread_cond_signal(&(sharedMem->entrances[lprNum].SIGN.condition));
@@ -305,7 +306,7 @@ void *miniManagerEntrance(void *arg) {
             pthread_cond_signal(&(sharedMem->entrances[lprNum].SIGN.condition));
             pthread_mutex_unlock(&(sharedMem->entrances[lprNum].SIGN.lock));
         } else {
-            printf("Setting status to valid number\n");
+            // printf("Setting status to valid number\n");
             //exists in list and car park not full
             htab_change_time(info->mem->h, sharedMem->entrances[lprNum].LPR.rego, getTimeMilli());
             pthread_mutex_lock(&(sharedMem->entrances[lprNum].SIGN.lock));
@@ -333,49 +334,51 @@ void *displayStatus(void *arg) {
     mem_t *mem = (mem_t *)arg;
     shm *sharedMem = mem->sharedMem;
     while(1) {
-        // // system("cls");
-        // //how full each level is
-        // printf("| Car capacity per level (occupied/maximum):\n");
-        // //lock mem
-        // pthread_mutex_lock(&mem_lock);
-        // for(int i = 0; i < NUM_LEVELS; ++i) {
-        //     printf("| Level %d: %d/%d\n", i + 1, mem->levelCap[i], NUM_CARS_PER_LEVEL);
-        // }
-        // pthread_mutex_unlock(&mem_lock);
-        // //lock shared memory - necessary? (would be very cumbersome)
-        // //status of LPRs
-        // printf("\n| Status of LPRs:\n");
-        // for(int i = 0; i < NUM_ENTRANCES; ++i) {
-        //     printf("| Entrance LPR %d: %s\n", i + 1, sharedMem->entrances[i].LPR.rego);
-        // }
-        // for(int i = 0; i < NUM_EXITS; ++i) {
-        //     printf("| Exit LPR %d: %s\n", i + 1, sharedMem->exits[i].LPR.rego);
-        // }
-        // for(int i = 0; i < NUM_LEVELS; ++i) {
-        //     printf("| Level %d LPR: %s\n", i + 1, sharedMem->levels[i].LPR.rego);
-        // }
-        // //status of boom gates
-        // printf("\n| Status of Boom Gates:\n");
-        // for(int i = 0; i < NUM_ENTRANCES; ++i) {
-        //     printf("| Entrance Boom Gate %d: %c\n", i + 1, sharedMem->entrances[i].BG.status);
-        // }
-        // for(int i = 0; i < NUM_EXITS; ++i) {
-        //     printf("| Exit Boom Gate %d: %c\n", i + 1, sharedMem->exits[i].BG.status);
-        // }
-        // //status of signs
-        // printf("\n| Status of Digitals Signs:\n");
-        // for(int i = 0; i < NUM_ENTRANCES; ++i) {
-        //     printf("| Entrance Digital Sign %d: %c\n", i + 1, sharedMem->entrances[i].SIGN.display);
-        // }
-        // //state of temperature sensors
-        // printf("\n| Status of Temperature Sensors:\n");
-        // for(int i = 0; i < NUM_LEVELS; ++i) {
-        //     printf("| Level %d Temperature Sensor: %d\n", i + 1, sharedMem->levels[i].tempSen1);
-        // }
-        // //revenue
-        // printf("\n| Revenue so far: %f\n", mem->billing);
-        // //wait 50ms
-        // usleep(50000);
+        //how full each level is
+        printf("| Car capacity per level (occupied/maximum):\n");
+        //lock mem
+        //pthread_mutex_lock(&mem_lock);
+        for(int i = 0; i < NUM_LEVELS; ++i) {
+            printf("| Level %d: %d/%d\n", i + 1, mem->levelCap[i], NUM_CARS_PER_LEVEL);
+        }
+        //pthread_mutex_unlock(&mem_lock);
+        //lock shared memory - necessary? (would be very cumbersome)
+        //status of LPRs
+        printf("\n| Status of LPRs:\n");
+        for(int i = 0; i < NUM_ENTRANCES; ++i) {
+            printf("| Entrance LPR %d: %s\n", i + 1, sharedMem->entrances[i].LPR.rego);
+        }
+        for(int i = 0; i < NUM_EXITS; ++i) {
+            printf("| Exit LPR %d: %s\n", i + 1, sharedMem->exits[i].LPR.rego);
+        }
+        for(int i = 0; i < NUM_LEVELS; ++i) {
+            printf("| Level %d LPR: %s\n", i + 1, sharedMem->levels[i].LPR.rego);
+        }
+        //status of boom gates
+        printf("\n| Status of Boom Gates:\n");
+        for(int i = 0; i < NUM_ENTRANCES; ++i) {
+            printf("| Entrance Boom Gate %d: %c\n", i + 1, sharedMem->entrances[i].BG.status);
+        }
+        for(int i = 0; i < NUM_EXITS; ++i) {
+            printf("| Exit Boom Gate %d: %c\n", i + 1, sharedMem->exits[i].BG.status);
+        }
+        //status of signs
+        printf("\n| Status of Digitals Signs:\n");
+        for(int i = 0; i < NUM_ENTRANCES; ++i) {
+            printf("| Entrance Digital Sign %d: %c\n", i + 1, sharedMem->entrances[i].SIGN.display);
+        }
+        //state of temperature sensors
+        printf("\n| Status of Temperature Sensors:\n");
+        for(int i = 0; i < NUM_LEVELS; ++i) {
+            printf("| Level %d Temperature Sensor: %d\n", i + 1, sharedMem->levels[i].tempSen1);
+        }
+        //revenue
+        printf("\n| Revenue so far: %f\n", mem->billing);
+        //wait 50ms
+        fflush(stdout);
+        usleep(500000);
+        // system("clear");
+        system("@cls||clear");
     }
     return NULL;
 }
@@ -412,7 +415,7 @@ int main(void) {
         return 1;
     }
     //setup hashtable
-    size_t buckets = 10;
+    size_t buckets = 100;
     htab_t h;
     if (!htab_init(&h, buckets))
     {
@@ -450,7 +453,7 @@ int main(void) {
     }
     fclose(fp);
 
-    htab_print(&h);
+    // htab_print(&h);
 
     //allocate memory for capacity and billed money (cents) - maybe make struct for this
     mem_t *info = (mem_t *)malloc(sizeof(mem_t)); //function
@@ -491,7 +494,7 @@ int main(void) {
     for(int i = 0; i < total; ++i) {
         pthread_join(pid[i], NULL);
     }
-    inputChecker();
+    // inputChecker();
     //close
     if (munmap(sharedMem, shmSize) != 0) {
         perror("munmap");
