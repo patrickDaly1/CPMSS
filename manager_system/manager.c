@@ -282,10 +282,16 @@ void *miniManagerEntrance(void *arg) {
         pthread_mutex_unlock(&(sharedMem->entrances[lprNum].LPR.lock));
         pthread_mutex_lock(&mem_lock);
         printf("Rego read: %s\n", sharedMem->entrances[lprNum].LPR.rego);
+        //printf("%ld", sizeof(sharedMem->entrances[lprNum].LPR.rego) / sizeof(char));
         printf("Rego found: %s\n", (htab_find(info->mem->h, sharedMem->entrances[lprNum].LPR.rego))->rego);
         //Check if rego in list and if car park full
         //sharedMem->entrances[lprNum].LPR.rego
+        //copy string into char[]
+        char regoCpy[6];
+        strcpy(regoCpy, sharedMem->entrances[lprNum].LPR.rego);
+        printf("Rego copy: %s\n", regoCpy);
         if(htab_find(info->mem->h, sharedMem->entrances[lprNum].LPR.rego) == NULL) {
+        // if(htab_find(info->mem->h, regoCpy) == NULL) {
             //doesn't exist in list
             printf("Setting status to 'X' in: %d\n", lprNum);
             pthread_mutex_lock(&(sharedMem->entrances[lprNum].SIGN.lock));
@@ -415,27 +421,36 @@ int main(void) {
     }
     //Setup file reader
     FILE *fp;
-    size_t len = 10;
-    char *line;
-    size_t read;
+    // size_t len = 10;
+    // char *line;
+    // size_t read;
     if((fp = fopen("plates.txt", "r")) == NULL) {
         perror("fopen\n");
         return 1;
     }
-    if((line = (char *)malloc(len * sizeof(char))) == NULL) {
-        perror("Unable to allocate memory for line\n");
-        exit(2);
+    // if((line = (char *)malloc(len * sizeof(char))) == NULL) {
+    //     perror("Unable to allocate memory for line\n");
+    //     exit(2);
+    // }
+    // //Read plates.txt per line and store in hashtable
+    // while((read = getline(&line, &len, fp)) != -1) { //function
+    //     char copy[read];
+    //     strncpy(copy, line, read - 1);
+    //     htab_add(&h, copy, 0, 0);
+    // }
+    // free(line);
+
+    char regos[100][7];
+    int index = 0;
+    while(fscanf(fp, "%s", regos[index]) != EOF) {
+        ++index;
     }
-    //Read plates.txt per line and store in hashtable
-    while((read = getline(&line, &len, fp)) != -1) { //function
-        char copy[read];
-        strncpy(copy, line, read - 1);
-        htab_add(&h, copy, 0, 0);
+    for(int i = 0; i < 100; ++i) {
+        htab_add(&h, regos[i], 0, 0);
     }
-    free(line);
     fclose(fp);
 
-    //htab_print(&h);
+    htab_print(&h);
 
     //allocate memory for capacity and billed money (cents) - maybe make struct for this
     mem_t *info = (mem_t *)malloc(sizeof(mem_t)); //function

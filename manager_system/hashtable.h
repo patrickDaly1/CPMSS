@@ -73,6 +73,20 @@ item_t *htab_find(htab_t *h, char *rego)
 {
     for (item_t *i = htab_bucket(h, rego); i != NULL; i = i->next)
     {
+        // printf("rego from htab in htab_find: %s\n", i->rego);
+        //iterate over and compare chars
+        // bool checkRego = true;
+        // for(int x = 0; x < 6; ++x) {
+        //     if(rego[x] != (i->rego)[x]) {
+        //         checkRego = false;
+        //     }
+        //     if (!checkRego) {
+        //         break;
+        //     }
+        // }
+        // if(checkRego) {
+        //     return i;
+        // }
         if (strcmp(i->rego, rego) == 0)
         { // found the key
             return i;

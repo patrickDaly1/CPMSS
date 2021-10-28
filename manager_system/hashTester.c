@@ -32,30 +32,39 @@ int main(void) {
 
     //Setup file reader
     FILE *fp;
-    size_t len = 10;
-    char *line;
-    size_t read;
+    // size_t len = 10;
+    // char *line;
+    // size_t read;
     if((fp = fopen("plates.txt", "r")) == NULL) {
         perror("fopen\n");
         exit(1);
     }
-    if((line = (char *)malloc(len * sizeof(char))) == NULL) {
-        perror("Unable to allocate buffer\n");
-        exit(2);
-    }
+    // if((line = (char *)malloc(len * sizeof(char))) == NULL) {
+    //     perror("Unable to allocate buffer\n");
+    //     exit(2);
+    // }
 
     //read plates.txt per line and store in hashtable
     printf("\n2nd test: \n");
-    int level = 1;
-    while((read = getline(&line, &len, fp)) != -1) {
-        char copy[read];
-        strncpy(copy, line, read - 1);
-        htab_add(&h, copy, 0, level);
-        if(level >= 5) {    
-            level = 0;
-        } else {
-            ++level;
-        }
+    // int level = 1;
+    // while((read = getline(&line, &len, fp)) != -1) {
+    //     char copy[read];
+    //     strncpy(copy, line, read - 1);
+    //     htab_add(&h, copy, 0, level);
+    //     if(level >= 5) {    
+    //         level = 0;
+    //     } else {
+    //         ++level;
+    //     }
+    // }
+
+    char regos[100][7];
+    int index = 0;
+    while(fscanf(fp, "%s", regos[index]) != EOF) {
+        ++index;
+    }
+    for(int i = 0; i < 100; ++i) {
+        htab_add(&h, regos[i], 0, 0);
     }
 
     htab_print(&h);
@@ -67,13 +76,13 @@ int main(void) {
     if(htab_find(&h, rego) == NULL) {
         printf("2 didn't work\n");
     }
-    char *rego2 = "927KOB\n";
+    char *rego2 = "927KOB";
     if(htab_find(&h, rego2) == NULL) {
         printf("3 didn't work\n");
     }
     //close
     fclose(fp);
-    free(line);
+    // free(line);
 
     //htab_print(&h);
 
