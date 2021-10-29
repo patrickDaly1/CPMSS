@@ -208,8 +208,12 @@ car_t *car_init(void)
     new_car->entry = rand() % entrys_exits;
     for (;;)
     {
-        if(odds == 0) // from plates.txt
+        if((odds == 0 && plates->next != NULL)) // from plates.txt
         {
+            car_t *car = (car_t *)malloc(sizeof(car_t));
+            strcpy(car->rego, plates->data->rego);
+
+            append(&plates, car);
             deleteNode(&plates, plates->data->rego);
             strcpy(new_car->rego, plates->data->rego);
         }
@@ -257,7 +261,7 @@ car_t *car_init(void)
  
 void *car_queuer(void *arg)
 {
-    for(int i = 0; i < 20; i++)
+    for(int i = 0; i < 1000; i++)
     //for(;;)
     {
         // initialise new car and add to queue
@@ -265,7 +269,7 @@ void *car_queuer(void *arg)
         append(&entryQueue, car_init());
         added++;
         pthread_mutex_unlock(&lock_queue);
-        printf("entry: %d, carpark: %d, exit: %d\n", listCount(entryQueue), listCount(inCarpark), listCount(exitQueue));
+        //printf("entry: %d, carpark: %d, exit: %d\n", listCount(entryQueue), listCount(inCarpark), listCount(exitQueue));
         
         // sleep for 1 - 100 ms
         usleep(((rand() % 100) + 1) * 1000);    
@@ -329,17 +333,20 @@ void *boom_gate_entry(void *ptr)
             }
             else
             {
-                printf("Boom %d status 1: %c\n", entry, sharedMem->entrances[entry].BG.status);
+                //printf("Boom %d status 1: %c\n", entry, sharedMem->entrances[entry].BG.status);
                 pthread_mutex_lock(&(sharedMem->entrances[entry].BG.lock));
-                pthread_cond_wait(&sharedMem->entrances[entry].BG.condition, &(sharedMem->entrances[entry].BG.lock));
+                while (sharedMem->entrances[entry].BG.status != 'R')
+                    pthread_cond_wait(&sharedMem->entrances[entry].BG.condition, &(sharedMem->entrances[entry].BG.lock));
                 pthread_mutex_unlock(&(sharedMem->entrances[entry].BG.lock));
                 if(sharedMem->entrances[entry].BG.status != 'R') {
-                    printf("Error raising boom entry: %d\n", entry);
+                    printf("Boom gate %d: ", entry);
+                    perror("Error raising boom entry\n");
                 }
                 usleep(10000); // open boom gate
                 //printf("Boom %d status 2: %c\n", entry, sharedMem->entrances[entry].BG.status);
 
                 pthread_mutex_lock(&(sharedMem->entrances[entry].BG.lock));
+                printf("Boom %d status 2: %c\n", entry, sharedMem->entrances[entry].BG.status);
                 sharedMem->entrances[entry].BG.status = 'O';
                 pthread_cond_signal(&sharedMem->entrances[entry].BG.condition);
                 pthread_mutex_unlock(&(sharedMem->entrances[entry].BG.lock));
@@ -347,7 +354,7 @@ void *boom_gate_entry(void *ptr)
                 //printf("Boom %d status 3: %c\n", entry, sharedMem->entrances[entry].BG.status);
 
                 pthread_mutex_lock(&lock_queue);
-                curr_car->parking = (int)(sharedMem->entrances[entry].SIGN.display) - 48;
+                curr_car->parking = (int)(sharedMem->entrances[entry].SIGN.display) - 49;
                 append(&inCarpark, curr_car);
                 deleteNode(&entryQueue, curr_car->rego);
                 carsEntered++;
@@ -362,16 +369,19 @@ void *boom_gate_entry(void *ptr)
                 //printf("Boom %d status 4: %c\n", entry, sharedMem->entrances[entry].BG.status);
 
                 pthread_mutex_lock(&(sharedMem->entrances[entry].BG.lock));
+                while (sharedMem->entrances[entry].BG.status != 'L')
                 pthread_cond_wait(&sharedMem->entrances[entry].BG.condition, &(sharedMem->entrances[entry].BG.lock));
                 pthread_mutex_unlock(&(sharedMem->entrances[entry].BG.lock));
                 if(sharedMem->entrances[entry].BG.status != 'L') {
-                    printf("Error lowering boom entry: %d\n", entry);
+                    printf("Boom gate %d: ", entry);
+                    perror("Error lowering boom entry\n");
                 }
                 
                 usleep(10000); // close boom gate
                 //printf("Boom %d status 5: %c\n", entry, sharedMem->entrances[entry].BG.status);
 
                 pthread_mutex_lock(&(sharedMem->entrances[entry].BG.lock));
+                printf("Boom %d status 2: %c\n", entry, sharedMem->entrances[entry].BG.status);
                 sharedMem->entrances[entry].BG.status = 'C';
                 pthread_cond_signal(&sharedMem->entrances[entry].BG.condition);
                 pthread_mutex_unlock(&(sharedMem->entrances[entry].BG.lock));
@@ -431,7 +441,8 @@ void *boom_gate_exit(void *ptr)
             pthread_cond_wait(&sharedMem->exits[exit].BG.condition, &(sharedMem->exits[exit].BG.lock));
             pthread_mutex_unlock(&(sharedMem->exits[exit].BG.lock));
             if(sharedMem->exits[exit].BG.status != 'R') {
-                printf("Error raising boom exit: %d\n", exit);
+                printf("Boom gate %d: ", exit);
+                perror("Error lowering boom exit\n");
             }
 
             usleep(10000); // open boom gate
@@ -447,13 +458,15 @@ void *boom_gate_exit(void *ptr)
             carsExited++;
             pthread_mutex_unlock(&lock_queue);
             //printf("%d %d %d \n", carsEntered, carsParked, carsExited);
-            printf("entry: %d, carpark: %d, exit: %d\n", listCount(entryQueue), listCount(inCarpark), listCount(exitQueue));
+            //printf("entry: %d, carpark: %d, exit: %d\n", listCount(entryQueue), listCount(inCarpark), listCount(exitQueue));
+            //printf("%d %d %d %d\n", added, carsEntered, carsParked, carsExited);
             
             pthread_mutex_lock(&(sharedMem->exits[exit].BG.lock));
             pthread_cond_wait(&sharedMem->exits[exit].BG.condition, &(sharedMem->exits[exit].BG.lock));
             pthread_mutex_unlock(&(sharedMem->exits[exit].BG.lock));
             if(sharedMem->exits[exit].BG.status != 'L') {
-                printf("Error lowering boom exit: %d\n", exit);
+                printf("Boom gate %d: ", exit);
+                perror("Error lowering boom exit\n");
             }
 
             usleep(10000); // close boom gate   
@@ -485,6 +498,7 @@ void *car_movement(void *aCar)
 {
     
     car_t* currCar= ((car_t *)aCar);
+    printf("Car at level: %d\n", currCar->parking + 1);
     usleep(10000); // travel to parking
 
     pthread_mutex_lock(&sharedMem->levels[currCar->parking].LPR.lock);
@@ -492,7 +506,8 @@ void *car_movement(void *aCar)
     pthread_cond_signal(&sharedMem->levels[currCar->parking].LPR.condition);
     pthread_mutex_unlock(&sharedMem->levels[currCar->parking].LPR.lock);
 
-    usleep(((rand() % 900) + 101) * 1000);
+    //usleep(((rand() % 900) + 101) * 1000);
+    usleep(1000*1000);
 
     currCar->exit = rand() % entrys_exits;
 
@@ -503,7 +518,7 @@ void *car_movement(void *aCar)
     deleteNode(&inCarpark, currCar->rego);
     carsParked++;
     pthread_mutex_unlock(&lock_queue);
-    printf("entry: %d, carpark: %d, exit: %d\n", listCount(entryQueue), listCount(inCarpark), listCount(exitQueue));
+    //printf("entry: %d, carpark: %d, exit: %d\n", listCount(entryQueue), listCount(inCarpark), listCount(exitQueue));
 
     pthread_mutex_lock(&sharedMem->levels[currCar->parking].LPR.lock);
     strcpy(sharedMem->levels[currCar->parking].LPR.rego, currCar->rego);

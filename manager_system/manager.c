@@ -86,7 +86,7 @@ int findFreeLevel(mem_t *mem) {
     }
     //iterate over capacities to find lowest
     int lowestLvl = 0;
-    for(int i = 1; i < NUM_CARS_PER_LEVEL; ++i) {
+    for(int i = 1; i < NUM_LEVELS; ++i) {
         if(mem->levelCap[lowestLvl] > mem->levelCap[i]) {
             lowestLvl = i;
         }
@@ -103,19 +103,19 @@ void bgEntrance(shm *sharedMem, int typeIndex) {
     pthread_mutex_lock(&(sharedMem->entrances[typeIndex].BG.lock));
     sharedMem->entrances[typeIndex].BG.status = 'R';
     pthread_cond_signal(&(sharedMem->entrances[typeIndex].BG.condition));
-    pthread_mutex_unlock(&(sharedMem->entrances[typeIndex].BG.lock));
-
-    //printf("Boom %d status 2: %c\n", typeIndex, sharedMem->entrances[typeIndex].BG.status);
-    
+    pthread_mutex_unlock(&(sharedMem->entrances[typeIndex].BG.lock));    
 
     // wait for sim to change it to open
     pthread_mutex_lock(&(sharedMem->entrances[typeIndex].BG.lock));
-    pthread_cond_wait(&(sharedMem->entrances[typeIndex].BG.condition), &(sharedMem->entrances[typeIndex].BG.lock));
+    while (sharedMem->entrances[typeIndex].BG.status != 'O')
+        pthread_cond_wait(&(sharedMem->entrances[typeIndex].BG.condition), &(sharedMem->entrances[typeIndex].BG.lock));
     // check changed to right value
+    //printf("Boom %d status 2: %c\n", typeIndex, sharedMem->entrances[typeIndex].BG.status);
     if (sharedMem->entrances[typeIndex].BG.status != 'O')
     {
         // Hasn't opened properly
         pthread_mutex_unlock(&(sharedMem->entrances[typeIndex].BG.lock));
+        printf("Boom gate %d: ", typeIndex);
         perror("Error raising boom gate for entrance\n");
         //exit(1);
     }
@@ -133,11 +133,13 @@ void bgEntrance(shm *sharedMem, int typeIndex) {
 
     // check BG is closed
     pthread_mutex_lock(&(sharedMem->entrances[typeIndex].BG.lock));
-    pthread_cond_wait(&(sharedMem->entrances[typeIndex].BG.condition), &(sharedMem->entrances[typeIndex].BG.lock));
+    while (sharedMem->entrances[typeIndex].BG.status != 'C')
+        pthread_cond_wait(&(sharedMem->entrances[typeIndex].BG.condition), &(sharedMem->entrances[typeIndex].BG.lock));
     if (sharedMem->entrances[typeIndex].BG.status != 'C')
     {
         // Hasn't closed properly
         pthread_mutex_unlock(&(sharedMem->entrances[typeIndex].BG.lock));
+        printf("Boom gate %d: ", typeIndex);
         perror("Error closing boom gate for entrance\n");
         exit(1);
     }
@@ -155,7 +157,8 @@ void bgExit(shm *sharedMem, int typeIndex) {
     
     // wait for sim to change it to open
     pthread_mutex_lock(&(sharedMem->exits[typeIndex].BG.lock));
-    pthread_cond_wait(&(sharedMem->exits[typeIndex].BG.condition), &(sharedMem->exits[typeIndex].BG.lock));
+    //while (sharedMem->entrances[typeIndex].BG.status != 'O')
+        pthread_cond_wait(&(sharedMem->exits[typeIndex].BG.condition), &(sharedMem->exits[typeIndex].BG.lock));
     //printf("Boom %d status 2: %c\n", typeIndex, sharedMem->exits[typeIndex].BG.status);
     // check changed to right value (check this is how condition var works)
     if (sharedMem->exits[typeIndex].BG.status != 'O')
@@ -178,6 +181,7 @@ void bgExit(shm *sharedMem, int typeIndex) {
 
     // check BG is closed
     pthread_mutex_lock(&(sharedMem->exits[typeIndex].BG.lock));
+    //while (sharedMem->entrances[typeIndex].BG.status != 'C')
     pthread_cond_wait(&(sharedMem->exits[typeIndex].BG.condition), &(sharedMem->exits[typeIndex].BG.lock));
     if (sharedMem->exits[typeIndex].BG.status != 'C')
     {
@@ -209,17 +213,27 @@ void *miniManagerLevel(void *arg) {
         pthread_mutex_lock(&(sharedMem->levels[lprNum].LPR.lock));
         pthread_cond_wait(&(sharedMem->levels[lprNum].LPR.condition), &(sharedMem->levels[lprNum].LPR.lock));
         pthread_mutex_lock(&mem_lock);
+
         //new car on level - increment level capacity, if was on previous level - decrement capacity
-        ++(info->mem->levelCap[lprNum]);
         char regoCpy[7];
         memcpy(regoCpy, sharedMem->levels[lprNum].LPR.rego, 6);
         item_t *car = htab_find(info->mem->h, regoCpy);
-        if(car->levelParked > 0) {
-            //has parked on previous level
+
+        if(car->levelParked == lprNum+1)
+        {
             --(info->mem->levelCap[car->levelParked - 1]);
+            car->levelParked = 0;
         }
-        //change level
-        car->levelParked = lprNum + 1;
+        else 
+        {
+            // if(car->levelParked > 0) {
+            // //has parked on previous level
+            // --(info->mem->levelCap[car->levelParked - 1]);
+            // }
+            //change level
+            ++(info->mem->levelCap[lprNum]);
+            car->levelParked = lprNum + 1;
+        }
         //unlock mutexes
         pthread_mutex_unlock(&mem_lock);
         pthread_mutex_unlock(&(sharedMem->levels[lprNum].LPR.lock));
@@ -255,7 +269,7 @@ void *miniManagerExit(void *arg) {
         //save into file
         fprintf(fp, "%s %.2f\n", sharedMem->exits[lprNum].LPR.rego, bill);
         //decrement previous level and overall capacity, increase revenue
-        --(info->mem->levelCap[car->levelParked + 1]);
+        //--(info->mem->levelCap[car->levelParked + 1]);
         --(info->mem->totalCap);
         info->mem->billing += bill;
         //boom gate operation
@@ -373,10 +387,10 @@ void *displayStatus(void *arg) {
             printf("| Level %d Temperature Sensor: %d\n", i + 1, sharedMem->levels[i].tempSen1);
         }
         //revenue
-        printf("\n| Revenue so far: %f\n", mem->billing);
+        printf("\n| Revenue so far: %f", mem->billing);
         //wait 50ms
         fflush(stdout);
-        usleep(500000);
+        usleep(50000);
         // system("clear");
         system("@cls||clear");
     }
