@@ -60,7 +60,7 @@ int main()
     int shm_fd;
     void *shm;
 	
-	shm_fd = shm_open("PARKING_TEST", O_RDWR, 0);
+	shm_fd = shm_open("PARKING", O_RDWR, 0);
 	shm = mmap(0, 2920, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
 
 	
@@ -119,7 +119,7 @@ int main()
 				medianList[j] = medianTemp;
 			}
 
-			/* Calculate fixed tempearture fire detection */
+			/* Calculate fixed temperature fire detection */
 			fixedTempCount = 0;
 			for(int i = 0; i < 30; i++) {
 				if(medianList[i] > 58) {
@@ -127,7 +127,7 @@ int main()
 				}
 			}
 			
-			if(fixedTempCount >= 37) {
+			if(fixedTempCount >= 27) {
 				alarm_active = true;
 			}
 
