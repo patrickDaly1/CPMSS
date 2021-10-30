@@ -157,7 +157,7 @@ void bgExit(shm *sharedMem, int typeIndex) {
     
     // wait for sim to change it to open
     pthread_mutex_lock(&(sharedMem->exits[typeIndex].BG.lock));
-    //while (sharedMem->entrances[typeIndex].BG.status != 'O')
+    while (sharedMem->exits[typeIndex].BG.status != 'O')
         pthread_cond_wait(&(sharedMem->exits[typeIndex].BG.condition), &(sharedMem->exits[typeIndex].BG.lock));
     //printf("Boom %d status 2: %c\n", typeIndex, sharedMem->exits[typeIndex].BG.status);
     // check changed to right value (check this is how condition var works)
@@ -181,7 +181,7 @@ void bgExit(shm *sharedMem, int typeIndex) {
 
     // check BG is closed
     pthread_mutex_lock(&(sharedMem->exits[typeIndex].BG.lock));
-    //while (sharedMem->entrances[typeIndex].BG.status != 'C')
+    while (sharedMem->exits[typeIndex].BG.status != 'C')
     pthread_cond_wait(&(sharedMem->exits[typeIndex].BG.condition), &(sharedMem->exits[typeIndex].BG.lock));
     if (sharedMem->exits[typeIndex].BG.status != 'C')
     {
