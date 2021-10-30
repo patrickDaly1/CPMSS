@@ -219,18 +219,13 @@ void *miniManagerLevel(void *arg) {
         memcpy(regoCpy, sharedMem->levels[lprNum].LPR.rego, 6);
         item_t *car = htab_find(info->mem->h, regoCpy);
 
-        if(car->levelParked == lprNum+1)
+        if(car->levelParked == lprNum + 1)
         {
             --(info->mem->levelCap[car->levelParked - 1]);
             car->levelParked = 0;
         }
         else 
         {
-            // if(car->levelParked > 0) {
-            // //has parked on previous level
-            // --(info->mem->levelCap[car->levelParked - 1]);
-            // }
-            //change level
             ++(info->mem->levelCap[lprNum]);
             car->levelParked = lprNum + 1;
         }
@@ -267,8 +262,8 @@ void *miniManagerExit(void *arg) {
         double bill = (getTimeMilli() - timeEntered) * 0.05;
         //save into file
         fprintf(fp, "%s %.2f\n", sharedMem->exits[lprNum].LPR.rego, bill);
-        //decrement previous level and overall capacity, increase revenue
-        //--(info->mem->levelCap[car->levelParked + 1]);
+        //decrement overall capacity, increase revenue
+
         --(info->mem->totalCap);
         info->mem->billing += bill;
         //boom gate operation
@@ -321,6 +316,7 @@ void *miniManagerEntrance(void *arg) {
         } else {
             // printf("Setting status to valid number\n");
             //exists in list and car park not full
+            ++(info->mem->totalCap);
             htab_change_time(info->mem->h, regoCpy, getTimeMilli());
             pthread_mutex_lock(&(sharedMem->entrances[lprNum].SIGN.lock));
 
@@ -334,7 +330,6 @@ void *miniManagerEntrance(void *arg) {
             boomGateOp(sharedMem, 'n', lprNum);
             pthread_mutex_lock(&mem_lock);
             //increment car park capacity (lpr levels will alter level capacity)
-            ++(info->mem->totalCap);
         }
         //unlock rego and car park memory
         
@@ -347,10 +342,12 @@ void *displayStatus(void *arg) {
     mem_t *mem = (mem_t *)arg;
     shm *sharedMem = mem->sharedMem;
     while(1) {
+        printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX Status of Car Park XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n");
+        pthread_mutex_lock(&mem_lock);
         //how full each level is
         for (int i = 0; i < NUM_LEVELS; ++i) {
             if (i == NUM_LEVELS - 1) {
-                printf("| Level %d: %d/%d \n\n", i + 1, mem->levelCap[i], NUM_CARS_PER_LEVEL);
+                printf("| Level %d: %d/%d\n\n", i + 1, mem->levelCap[i], NUM_CARS_PER_LEVEL);
             } else {
                 printf("| Level %d: %d/%d ", i + 1, mem->levelCap[i], NUM_CARS_PER_LEVEL);
             }
@@ -414,6 +411,8 @@ void *displayStatus(void *arg) {
         }
         //revenue
         printf("| Revenue so far: %.2f\n\n", mem->billing);
+        printf("| Total Capacity: %d/%d\n", mem->totalCap, NUM_LEVELS * NUM_CARS_PER_LEVEL);
+        pthread_mutex_unlock(&mem_lock);
         //wait 50ms
         fflush(stdout);
         usleep(50000);
