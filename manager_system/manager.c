@@ -122,7 +122,7 @@ void bgEntrance(shm *sharedMem, int typeIndex) {
     pthread_mutex_unlock(&(sharedMem->entrances[typeIndex].BG.lock));
     
     // BG opened, wait 5ms?
-    usleep(5000);
+    usleep(20000);
     // close boom gate
     //printf("Boom %d status 3: %c\n", typeIndex, sharedMem->entrances[typeIndex].BG.status);
     pthread_mutex_lock(&(sharedMem->entrances[typeIndex].BG.lock));
@@ -170,7 +170,7 @@ void bgExit(shm *sharedMem, int typeIndex) {
     }
     pthread_mutex_unlock(&(sharedMem->exits[typeIndex].BG.lock));
     // BG opened, wait 5ms?
-    usleep(5000);
+    usleep(20000);
     //printf("Boom %d status 3: %c\n", typeIndex, sharedMem->exits[typeIndex].BG.status);
     // close boom gate
     pthread_mutex_lock(&(sharedMem->exits[typeIndex].BG.lock));
@@ -265,7 +265,6 @@ void *miniManagerExit(void *arg) {
         item_t *car = htab_find(info->mem->h, regoCpy);
         long timeEntered = car->timeEntered;
         double bill = (getTimeMilli() - timeEntered) * 0.05;
-        
         //save into file
         fprintf(fp, "%s %.2f\n", sharedMem->exits[lprNum].LPR.rego, bill);
         //decrement previous level and overall capacity, increase revenue
@@ -322,7 +321,7 @@ void *miniManagerEntrance(void *arg) {
         } else {
             // printf("Setting status to valid number\n");
             //exists in list and car park not full
-            htab_change_time(info->mem->h, sharedMem->entrances[lprNum].LPR.rego, getTimeMilli());
+            htab_change_time(info->mem->h, regoCpy, getTimeMilli());
             pthread_mutex_lock(&(sharedMem->entrances[lprNum].SIGN.lock));
 
             pthread_mutex_unlock(&mem_lock);
@@ -349,50 +348,76 @@ void *displayStatus(void *arg) {
     shm *sharedMem = mem->sharedMem;
     while(1) {
         //how full each level is
-        printf("| Car capacity per level (occupied/maximum):\n");
-        //lock mem
-        //pthread_mutex_lock(&mem_lock);
-        for(int i = 0; i < NUM_LEVELS; ++i) {
-            printf("| Level %d: %d/%d\n", i + 1, mem->levelCap[i], NUM_CARS_PER_LEVEL);
+        for (int i = 0; i < NUM_LEVELS; ++i) {
+            if (i == NUM_LEVELS - 1) {
+                printf("| Level %d: %d/%d \n\n", i + 1, mem->levelCap[i], NUM_CARS_PER_LEVEL);
+            } else {
+                printf("| Level %d: %d/%d ", i + 1, mem->levelCap[i], NUM_CARS_PER_LEVEL);
+            }
         }
-        //pthread_mutex_unlock(&mem_lock);
-        //lock shared memory - necessary? (would be very cumbersome)
         //status of LPRs
-        printf("\n| Status of LPRs:\n");
-        for(int i = 0; i < NUM_ENTRANCES; ++i) {
-            printf("| Entrance LPR %d: %s\n", i + 1, sharedMem->entrances[i].LPR.rego);
+        printf("\n");
+        for (int i = 0; i < NUM_ENTRANCES; ++i) {
+            if (i == NUM_ENTRANCES - 1) { 
+                printf("| Entrance LPR %d: %s\n\n", i + 1, sharedMem->entrances[i].LPR.rego);
+            } else {
+                printf("| Entrance LPR %d: %s ", i + 1, sharedMem->entrances[i].LPR.rego);
+            }
         }
-        for(int i = 0; i < NUM_EXITS; ++i) {
-            printf("| Exit LPR %d: %s\n", i + 1, sharedMem->exits[i].LPR.rego);
+        for (int i = 0; i < NUM_EXITS; ++i) {
+            if (i == NUM_EXITS - 1) {
+                printf("| Exit LPR %d: %s\n\n", i + 1, sharedMem->exits[i].LPR.rego);
+            } else {
+                printf("| Exit LPR %d: %s ", i + 1, sharedMem->exits[i].LPR.rego);
+            }       
         }
-        for(int i = 0; i < NUM_LEVELS; ++i) {
-            printf("| Level %d LPR: %s\n", i + 1, sharedMem->levels[i].LPR.rego);
+        for (int i = 0; i < NUM_LEVELS; ++i) {
+            if (i == NUM_LEVELS - 1) {
+                printf("| Level %d LPR: %s\n\n", i + 1, sharedMem->levels[i].LPR.rego);
+            } else {
+                printf("| Level %d LPR: %s ", i + 1, sharedMem->levels[i].LPR.rego);
+            }
         }
         //status of boom gates
-        printf("\n| Status of Boom Gates:\n");
-        for(int i = 0; i < NUM_ENTRANCES; ++i) {
-            printf("| Entrance Boom Gate %d: %c\n", i + 1, sharedMem->entrances[i].BG.status);
+        printf("\n");
+        for (int i = 0; i < NUM_ENTRANCES; ++i) {
+            if (i == NUM_ENTRANCES - 1) {
+                printf("| Entrance BG %d: %c\n\n", i + 1, sharedMem->entrances[i].BG.status);
+            } else {
+                printf("| Entrance BG %d: %c ", i + 1, sharedMem->entrances[i].BG.status);
+            }
         }
-        for(int i = 0; i < NUM_EXITS; ++i) {
-            printf("| Exit Boom Gate %d: %c\n", i + 1, sharedMem->exits[i].BG.status);
+        for (int i = 0; i < NUM_EXITS; ++i) {
+            if (i == NUM_EXITS - 1) {
+                printf("| Exit BG %d: %c\n\n", i + 1, sharedMem->exits[i].BG.status);
+            } else {
+                printf("| Exit BG %d: %c ", i + 1, sharedMem->exits[i].BG.status);
+            }
         }
         //status of signs
-        printf("\n| Status of Digitals Signs:\n");
-        for(int i = 0; i < NUM_ENTRANCES; ++i) {
-            printf("| Entrance Digital Sign %d: %c\n", i + 1, sharedMem->entrances[i].SIGN.display);
+        printf("\n");
+        for (int i = 0; i < NUM_ENTRANCES; ++i) {
+            if (i == NUM_ENTRANCES - 1) {
+                printf("| Entrance Sign %d: %c\n\n", i + 1, sharedMem->entrances[i].SIGN.display);
+            } else {
+                printf("| Entrance Sign %d: %c ", i + 1, sharedMem->entrances[i].SIGN.display);
+            }
         }
         //state of temperature sensors
-        printf("\n| Status of Temperature Sensors:\n");
-        for(int i = 0; i < NUM_LEVELS; ++i) {
-            printf("| Level %d Temperature Sensor: %d\n", i + 1, sharedMem->levels[i].tempSen1);
+        printf("\n");
+        for (int i = 0; i < NUM_LEVELS; ++i) {
+            if (i == NUM_LEVELS - 1) {
+                printf("| Level %d Temp: %d\n\n", i + 1, sharedMem->levels[i].tempSen1);
+            } else {
+                printf("| Level %d Temp: %d ", i + 1, sharedMem->levels[i].tempSen1);
+            }
         }
         //revenue
-        printf("\n| Revenue so far: %f", mem->billing);
+        printf("| Revenue so far: %.2f\n\n", mem->billing);
         //wait 50ms
         fflush(stdout);
         usleep(50000);
-        // system("clear");
-        system("@cls||clear");
+        system("clear");
     }
     return NULL;
 }
