@@ -543,9 +543,9 @@ void *temp_sensor(void *arg)
     for(;;)
     {
         // update temp global value here
-        //printf("%d from 1\n", (rand() % 4) + 21);
+        printf("%d from 1\n", (rand() % 10) + 58);
         for(int i = 0; i < num_levels; i++)
-            sharedMem->num_levels[i]->tempSens1 = (short)((rand() % 4) + 21);
+            sharedMem->levels[i].tempSen1 = (short)((rand() % 10) + 58);
 
         usleep(((rand() % 5) + 20) * 1000);
     }
