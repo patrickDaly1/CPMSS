@@ -129,6 +129,10 @@ int main(int argc, char** argv)
         pthread_mutex_init(&sharedMem->levels[i].LPR.lock, &mattr);
         pthread_cond_init(&sharedMem->levels[i].LPR.condition, &cattr);
     }
+    
+    for (int i = 0; i < num_levels; ++i) {
+        sharedMem->levels[i].tempSen1 = 1;
+    }
 
     sleep(5); // sleep statement to sync systems 
 
@@ -558,7 +562,6 @@ void *car_movement(void *aCar)
 void *temp_sensor(void *arg)
 {
     int count = 0;
-    sharedMem->levels[i].tempSen1 = 0;
     for(;;)
     {
         if (count < 400)

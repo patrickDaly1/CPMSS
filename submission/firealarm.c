@@ -28,12 +28,12 @@ void* tempmonitor(void* ptr) {
 		int tempList[35];
 		int medianList[30];
 		int count = 0;
-		int addr;
+		// int addr;
 		int medianTemp;
-		int hightemps;
+		// int hightemps;
 		int fixedTempCount;
 
-		bool first = true;
+		// bool first = true;
 		int iterations = 0;
 
 		/* Evaluate the first five temperatures before smoothing*/
@@ -98,6 +98,7 @@ void* tempmonitor(void* ptr) {
 
 		usleep(2000);
 	}
+	return NULL;
 }
 
 
