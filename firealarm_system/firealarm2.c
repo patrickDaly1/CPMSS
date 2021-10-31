@@ -63,8 +63,8 @@ int main()
 	shm_fd = shm_open("PARKING", O_RDWR, 0);
 	shm = mmap(0, 2920, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
 
-	while(1){
-	//while(runs < 10) {
+	//while(true){
+	while(runs < 10) {
 
 		int tempList[35];
 		int count = 0;

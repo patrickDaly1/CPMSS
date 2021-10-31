@@ -182,7 +182,7 @@ void bgExit(shm *sharedMem, int typeIndex) {
     // check BG is closed
     pthread_mutex_lock(&(sharedMem->exits[typeIndex].BG.lock));
     while (sharedMem->exits[typeIndex].BG.status != 'C')
-    pthread_cond_wait(&(sharedMem->exits[typeIndex].BG.condition), &(sharedMem->exits[typeIndex].BG.lock));
+        pthread_cond_wait(&(sharedMem->exits[typeIndex].BG.condition), &(sharedMem->exits[typeIndex].BG.lock));
     if (sharedMem->exits[typeIndex].BG.status != 'C')
     {
         // Hasn't opened properly
@@ -221,8 +221,11 @@ void *miniManagerLevel(void *arg) {
 
         if(car->levelParked == lprNum + 1)
         {
-            --(info->mem->levelCap[car->levelParked - 1]);
+            if (info->mem->levelCap[car->levelParked - 1] != 0){
+            //--(info->mem->levelCap[car->levelParked - 1]);
+            //info->mem->levelCap[car->levelParked - 1] = 0;
             car->levelParked = 0;
+            }
         }
         else 
         {
@@ -283,6 +286,8 @@ void *miniManagerEntrance(void *arg) {
     int lprNum = info->lprNum;
     shm *sharedMem = info->mem->sharedMem;
     pthread_mutex_lock(&mem_lock);
+
+    sharedMem->entrances[lprNum].BG.status = 'C';
     pthread_mutex_unlock(&mem_lock);
     while(1) {
         //Check allocated lpr - use condition variable and mutex before accesing it
@@ -342,10 +347,17 @@ void *displayStatus(void *arg) {
     mem_t *mem = (mem_t *)arg;
     shm *sharedMem = mem->sharedMem;
     while(1) {
+        int r = rand()%8;
+        
         printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX Status of Car Park XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n");
         pthread_mutex_lock(&mem_lock);
         //how full each level is
         for (int i = 0; i < NUM_LEVELS; ++i) {
+            if (r == 1)
+            {
+                if (mem->levelCap[i] != 0)
+                    --mem->levelCap[i];
+            }
             if (i == NUM_LEVELS - 1) {
                 printf("| Level %d: %d/%d\n\n", i + 1, mem->levelCap[i], NUM_CARS_PER_LEVEL);
             } else {

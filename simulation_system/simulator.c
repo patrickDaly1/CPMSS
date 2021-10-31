@@ -141,6 +141,10 @@ int main(int argc, char** argv)
     {
         loc[i] = i;
         pthread_create(&boom_gate_entry_thread[i], NULL, boom_gate_entry, &loc[i]);
+    }
+
+    for (int i = 0; i < entrys_exits; i++)
+    {
         pthread_create(&boom_gate_exit_thread[i], NULL, boom_gate_exit, &loc[i]);
     }
 
@@ -258,8 +262,8 @@ car_t *car_init(void)
  
 void *car_queuer(void *arg)
 {
-    //for(int i = 0; i < 400; i++)
-    for(;;)
+    for(int i = 0; i < 400; i++)
+    //for(;;)
     {
         // initialise new car and add to queue
         pthread_mutex_lock(&lock_queue);
@@ -347,7 +351,7 @@ void *boom_gate_entry(void *ptr)
 
                 /* signal that boom gate is open */ 
                 pthread_mutex_lock(&(sharedMem->entrances[entry].BG.lock));
-                printf("Boom %d status 2: %c\n", entry, sharedMem->entrances[entry].BG.status);
+                //printf("Boom %d status 2: %c\n", entry, sharedMem->entrances[entry].BG.status);
                 sharedMem->entrances[entry].BG.status = 'O';
                 pthread_cond_signal(&sharedMem->entrances[entry].BG.condition);
                 pthread_mutex_unlock(&(sharedMem->entrances[entry].BG.lock));
@@ -386,7 +390,7 @@ void *boom_gate_entry(void *ptr)
 
                 /* signal that boom gate is closed */                
                 pthread_mutex_lock(&(sharedMem->entrances[entry].BG.lock));
-                printf("Boom %d status 2: %c\n", entry, sharedMem->entrances[entry].BG.status);
+                //printf("Boom %d status 2: %c\n", entry, sharedMem->entrances[entry].BG.status);
                 sharedMem->entrances[entry].BG.status = 'C';
                 pthread_cond_signal(&sharedMem->entrances[entry].BG.condition);
                 pthread_mutex_unlock(&(sharedMem->entrances[entry].BG.lock));
@@ -434,6 +438,7 @@ void *boom_gate_exit(void *ptr)
         
         if (curr_car != NULL) // if car is found
         {
+            printf ("rego at exit %d: %s\n", exit, curr_car->rego);
             /* trigger lpr */
             pthread_mutex_lock(&(sharedMem->exits[exit].LPR.lock));
             strcpy(sharedMem->exits[exit].LPR.rego, curr_car->rego);
@@ -509,6 +514,7 @@ void *car_movement(void *aCar)
     car_t* currCar= ((car_t *)aCar);
     printf("Car at level: %d\n", currCar->parking + 1);
     usleep(10000); // simulate traveling to parking
+    
 
     /* trigger level lrp that car is parking on */
     pthread_mutex_lock(&sharedMem->levels[currCar->parking].LPR.lock);
@@ -520,6 +526,7 @@ void *car_movement(void *aCar)
     //usleep(1000*1000);
 
     currCar->exit = rand() % entrys_exits;  // select random exit to go towords
+    printf("to exit: %d\n", currCar->exit);
 
     usleep(10000); // simulate traveling to exit
 
@@ -530,7 +537,6 @@ void *car_movement(void *aCar)
     carsParked++;
     pthread_mutex_unlock(&lock_queue);
     //printf("entry: %d, carpark: %d, exit: %d\n", listCount(entryQueue), listCount(inCarpark), listCount(exitQueue));
-
     /* trigger lrp of level car was parked on */
     pthread_mutex_lock(&sharedMem->levels[currCar->parking].LPR.lock);
     strcpy(sharedMem->levels[currCar->parking].LPR.rego, currCar->rego);
@@ -540,7 +546,6 @@ void *car_movement(void *aCar)
     // pthread_mutex_lock(&sharedMem->exits[currCar->exit].BG.lock);
     // pthread_cond_signal(&sharedMem->exits[currCar->exit].BG.condition);
     // pthread_mutex_unlock(&sharedMem->exits[currCar->exit].BG.lock);
-    
 
     return 0;
 }
@@ -555,10 +560,10 @@ void *temp_sensor(void *arg)
     int count = 0;
     for(;;)
     {
-        if (count < 1000)
+        if (count < 100)
         {
             // update temp global value here
-            printf("%d from 1\n", (rand() % 4) + 20);
+            //printf("%d from 1\n", (rand() % 4) + 20);
             for(int i = 0; i < num_levels; i++)
                 sharedMem->levels[i].tempSen1 = (short)((rand() % 10) + 58);
 
@@ -567,7 +572,7 @@ void *temp_sensor(void *arg)
         else
         {
             // update temp global value here
-            printf("%d from 1\n", (rand() % 4) + 58);
+            //printf("%d from 1\n", (rand() % 4) + 58);
             for(int i = 0; i < num_levels; i++)
                 sharedMem->levels[i].tempSen1 = (short)((rand() % 10) + 58);
 
