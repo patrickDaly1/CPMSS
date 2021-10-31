@@ -50,7 +50,6 @@ void* tempmonitor(void* ptr) {
 			int temporaryList[5];
 			for (int i = 0; i < 5; i++) {
 				temporaryList[i] = tempList[count - 5 + i];
-				printf("temp: %d \n", temporaryList[i]);
 			}
 
 			/* Sort temp list using selection sort */
@@ -88,8 +87,6 @@ void* tempmonitor(void* ptr) {
 			}
 		}
 
-		printf("Fixed temp count: %d\n", fixedTempCount);
-
 		if (fixedTempCount >= 27) {
 			alarm_active = true;
 		}
@@ -98,8 +95,6 @@ void* tempmonitor(void* ptr) {
 		if ((medianList[30] - medianList[0]) > 8) {
 			alarm_active = true;
 		}
-
-		printf("alarm: %d\n", alarm_active);
 
 		usleep(2000);
 	}
@@ -130,7 +125,7 @@ int main()
 		pthread_create(&threads[i], NULL, tempmonitor, &level[i]);
 	}
 
-	while(shared_mem->levels[thread].tempSen1 != NULL) {
+	while(shared_mem->levels[0].tempSen1 >= 0) {
 		/* Activate Alarm */
 		if (alarm_active) {
 			fprintf(stderr, "*** ALARM ACTIVE ***\n");
