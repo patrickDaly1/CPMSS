@@ -327,7 +327,7 @@ void *boom_gate_entry(void *ptr)
             printf ("rego at entry %d: %s\n", entry, curr_car->rego);
             printf("sign display entry %d: %c\n", entry, sharedMem->entrances[entry].SIGN.display);
             // if denied access
-            if ((sharedMem->entrances[entry].SIGN.display == 'X') || (sharedMem->entrances[entry].SIGN.display == 'F') || (&sharedMem->entrances[entry].SIGN.display == NULL))
+            if ((sharedMem->entrances[entry].SIGN.display == 'X') || (sharedMem->entrances[entry].SIGN.display == 'F') || (sharedMem->entrances[entry].SIGN.display == NULL) || (sharedMem->levels[0].alarm1))
             {
                 /* remove from sim */ 
                 pthread_mutex_lock(&lock_queue);
@@ -433,7 +433,7 @@ void *boom_gate_exit(void *ptr)
 
         // search to find first car at corresponding exit queue
         pthread_mutex_lock(&lock_queue);
-        curr_car =  searchExit(exitQueue, exit);;
+        curr_car =  searchExit(exitQueue, exit);
         pthread_mutex_unlock(&lock_queue);
         
         if (curr_car != NULL) // if car is found
@@ -444,54 +444,60 @@ void *boom_gate_exit(void *ptr)
             strcpy(sharedMem->exits[exit].LPR.rego, curr_car->rego);
             pthread_cond_signal(&(sharedMem->exits[exit].LPR.condition));
             pthread_mutex_unlock(&(sharedMem->exits[exit].LPR.lock));
+
+            if (sharedMem->levels[0].alarm1)
+            {
+                pthread_mutex_lock(&lock_queue);
+                deleteNode(&exitQueue, curr_car->rego);
+                carsExited++;
+                pthread_mutex_unlock(&lock_queue);
+            }
+            else{
+                //printf("Boom %d status 1: %c\n", exit, sharedMem->exits[exit].BG.status);
+                /* wait for open signal from manager */
+                pthread_mutex_lock(&(sharedMem->exits[exit].BG.lock));
+                while (sharedMem->exits[exit].BG.status != 'R')
+                    pthread_cond_wait(&sharedMem->exits[exit].BG.condition, &(sharedMem->exits[exit].BG.lock));
+                pthread_mutex_unlock(&(sharedMem->exits[exit].BG.lock));
+                if(sharedMem->exits[exit].BG.status != 'R') {
+                    printf("Boom gate %d: ", exit);
+                    perror("Error lowering boom exit\n");
+                }
+
+                usleep(10000); // simulate boom gate opening
+
+                /* signal that boom gate is open */
+                pthread_mutex_lock(&(sharedMem->exits[exit].BG.lock));
+                sharedMem->exits[exit].BG.status = 'O';
+                pthread_cond_signal(&sharedMem->exits[exit].BG.condition);
+                pthread_mutex_unlock(&(sharedMem->exits[exit].BG.lock));
+                //printf("Boom %d status 2: %c\n", exit, sharedMem->exits[exit].BG.status);
+
+                /* remove car from exit queue */
+                
+                //printf("%d %d %d \n", carsEntered, carsParked, carsExited);
+                //printf("entry: %d, carpark: %d, exit: %d\n", listCount(entryQueue), listCount(inCarpark), listCount(exitQueue));
+                //printf("%d %d %d %d\n", added, carsEntered, carsParked, carsExited);
+
+                /* wait for manager to lower boom gate */            
+                pthread_mutex_lock(&(sharedMem->exits[exit].BG.lock));
+                while (sharedMem->exits[exit].BG.status != 'L')
+                    pthread_cond_wait(&sharedMem->exits[exit].BG.condition, &(sharedMem->exits[exit].BG.lock));
+                pthread_mutex_unlock(&(sharedMem->exits[exit].BG.lock));
+                if(sharedMem->exits[exit].BG.status != 'L') {
+                    printf("Boom gate %d: ", exit);
+                    perror("Error lowering boom exit\n");
+                }
+
+                usleep(10000); // simulate boom gate closing  
+
+                /* signal that boom gate is closed */
+                pthread_mutex_lock(&(sharedMem->exits[exit].BG.lock));
+                sharedMem->exits[exit].BG.status = 'C';
+                pthread_cond_signal(&sharedMem->exits[exit].BG.condition);
+                pthread_mutex_unlock(&(sharedMem->exits[exit].BG.lock));  
+            }
             
-            //printf("Boom %d status 1: %c\n", exit, sharedMem->exits[exit].BG.status);
-
-            /* wait for open signal from manager */
-            pthread_mutex_lock(&(sharedMem->exits[exit].BG.lock));
-            while (sharedMem->exits[exit].BG.status != 'R')
-                pthread_cond_wait(&sharedMem->exits[exit].BG.condition, &(sharedMem->exits[exit].BG.lock));
-            pthread_mutex_unlock(&(sharedMem->exits[exit].BG.lock));
-            if(sharedMem->exits[exit].BG.status != 'R') {
-                printf("Boom gate %d: ", exit);
-                perror("Error lowering boom exit\n");
-            }
-
-            usleep(10000); // simulate boom gate opening
-
-            /* signal that boom gate is open */
-            pthread_mutex_lock(&(sharedMem->exits[exit].BG.lock));
-            sharedMem->exits[exit].BG.status = 'O';
-            pthread_cond_signal(&sharedMem->exits[exit].BG.condition);
-            pthread_mutex_unlock(&(sharedMem->exits[exit].BG.lock));
-            //printf("Boom %d status 2: %c\n", exit, sharedMem->exits[exit].BG.status);
-
-            /* remove car from exit queue */
-            pthread_mutex_lock(&lock_queue);
-            deleteNode(&exitQueue, curr_car->rego);
-            carsExited++;
-            pthread_mutex_unlock(&lock_queue);
-            //printf("%d %d %d \n", carsEntered, carsParked, carsExited);
-            //printf("entry: %d, carpark: %d, exit: %d\n", listCount(entryQueue), listCount(inCarpark), listCount(exitQueue));
-            //printf("%d %d %d %d\n", added, carsEntered, carsParked, carsExited);
-
-            /* wait for manager to lower boom gate */            
-            pthread_mutex_lock(&(sharedMem->exits[exit].BG.lock));
-            while (sharedMem->exits[exit].BG.status != 'L')
-                pthread_cond_wait(&sharedMem->exits[exit].BG.condition, &(sharedMem->exits[exit].BG.lock));
-            pthread_mutex_unlock(&(sharedMem->exits[exit].BG.lock));
-            if(sharedMem->exits[exit].BG.status != 'L') {
-                printf("Boom gate %d: ", exit);
-                perror("Error lowering boom exit\n");
-            }
-
-            usleep(10000); // simulate boom gate closing  
-
-            /* signal that boom gate is closed */
-            pthread_mutex_lock(&(sharedMem->exits[exit].BG.lock));
-            sharedMem->exits[exit].BG.status = 'C';
-            pthread_cond_signal(&sharedMem->exits[exit].BG.condition);
-            pthread_mutex_unlock(&(sharedMem->exits[exit].BG.lock));  
 
         }
         // if (100 == carsExited)
@@ -560,12 +566,12 @@ void *temp_sensor(void *arg)
     int count = 0;
     for(;;)
     {
-        if (count < 100)
+        if (count < 300)
         {
             // update temp global value here
             //printf("%d from 1\n", (rand() % 4) + 20);
             for(int i = 0; i < num_levels; i++)
-                sharedMem->levels[i].tempSen1 = (short)((rand() % 10) + 58);
+                sharedMem->levels[i].tempSen1 = (short)((rand() % 10) + 24);
 
             usleep(((rand() % 5) + 20) * 1000);
         }

@@ -252,6 +252,8 @@ void *miniManagerExit(void *arg) {
     }
     int lprNum = info->lprNum;
     shm *sharedMem = info->mem->sharedMem;
+
+    sharedMem->exits[lprNum].BG.status = 'C';
     while(1) {
         //Check allocated lpr - use condition variable and mutex before accesing it
         pthread_mutex_lock(&(sharedMem->exits[lprNum].LPR.lock));
@@ -272,7 +274,9 @@ void *miniManagerExit(void *arg) {
         //boom gate operation
         //Raise boom gates and unlock thread memory, then relock after opening boom gate
         pthread_mutex_unlock(&mem_lock);
-        boomGateOp(sharedMem, 'x', lprNum);
+        if(!sharedMem->levels[0].alarm1) {
+            boomGateOp(sharedMem, 'x', lprNum);
+        }
         //unlock shared memory
         pthread_mutex_unlock(&(sharedMem->exits[lprNum].LPR.lock));
     }
@@ -295,38 +299,30 @@ void *miniManagerEntrance(void *arg) {
         pthread_cond_wait(&(sharedMem->entrances[lprNum].LPR.condition), &(sharedMem->entrances[lprNum].LPR.lock));
         pthread_mutex_unlock(&(sharedMem->entrances[lprNum].LPR.lock));
         pthread_mutex_lock(&mem_lock);
-        //printf("Rego read: %s\n", sharedMem->entrances[lprNum].LPR.rego);
-        //printf("%ld", sizeof(sharedMem->entrances[lprNum].LPR.rego) / sizeof(char));
-        //printf("Rego found: %s\n", (htab_find(info->mem->h, sharedMem->entrances[lprNum].LPR.rego))->rego);
-        //Check if rego in list and if car park full
-        //sharedMem->entrances[lprNum].LPR.rego
-        //copy string into char[]
         char regoCpy[7];
         memcpy(regoCpy, sharedMem->entrances[lprNum].LPR.rego, 6);
-        //printf("Rego copy: %s\n", regoCpy);
-        // if(htab_find(info->mem->h, sharedMem->entrances[lprNum].LPR.rego) == NULL) {
-        if(htab_find(info->mem->h, regoCpy) == NULL) {
+        if (sharedMem->levels[0].alarm1) {
+            //alarm true
+        } else if (htab_find(info->mem->h, regoCpy) == NULL) {
             //doesn't exist in list
-            // printf("Setting status to 'X' in: %d\n", lprNum);
             pthread_mutex_lock(&(sharedMem->entrances[lprNum].SIGN.lock));
             sharedMem->entrances[lprNum].SIGN.display = 'X';
             pthread_cond_signal(&(sharedMem->entrances[lprNum].SIGN.condition));
             pthread_mutex_unlock(&(sharedMem->entrances[lprNum].SIGN.lock));
-        } else if(info->mem->totalCap >= NUM_CARS_PER_LEVEL * NUM_LEVELS) {
+        } else if (info->mem->totalCap >= NUM_CARS_PER_LEVEL * NUM_LEVELS) {
             //full
             pthread_mutex_lock(&(sharedMem->entrances[lprNum].SIGN.lock));
             sharedMem->entrances[lprNum].SIGN.display = 'F';
             pthread_cond_signal(&(sharedMem->entrances[lprNum].SIGN.condition));
             pthread_mutex_unlock(&(sharedMem->entrances[lprNum].SIGN.lock));
         } else {
-            // printf("Setting status to valid number\n");
             //exists in list and car park not full
             ++(info->mem->totalCap);
             htab_change_time(info->mem->h, regoCpy, getTimeMilli());
             pthread_mutex_lock(&(sharedMem->entrances[lprNum].SIGN.lock));
 
             pthread_mutex_unlock(&mem_lock);
-            sharedMem->entrances[lprNum].SIGN.display = findFreeLevel(info->mem) + '0'; //converts int to char for 0-9
+            sharedMem->entrances[lprNum].SIGN.display = findFreeLevel(info->mem) + '0';
             pthread_cond_signal(&(sharedMem->entrances[lprNum].SIGN.condition));
             pthread_mutex_unlock(&(sharedMem->entrances[lprNum].SIGN.lock));
             
@@ -431,13 +427,6 @@ void *displayStatus(void *arg) {
         system("clear");
     }
     return NULL;
-}
-
-int inputChecker(void) {
-    while(1) {
-        //program goes on forever
-    }
-    return 0;
 }
 
 int main(void) {
