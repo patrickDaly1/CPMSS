@@ -327,7 +327,7 @@ void *boom_gate_entry(void *ptr)
             printf ("rego at entry %d: %s\n", entry, curr_car->rego);
             printf("sign display entry %d: %c\n", entry, sharedMem->entrances[entry].SIGN.display);
             // if denied access
-            if ((sharedMem->entrances[entry].SIGN.display == 'X') || (sharedMem->entrances[entry].SIGN.display == 'F') || (&sharedMem->entrances[entry].SIGN.display == NULL))
+            if ((sharedMem->entrances[entry].SIGN.display == 'X') || (sharedMem->entrances[entry].SIGN.display == 'F') || (sharedMem->entrances[entry].SIGN.display == NULL) || (sharedMem->levels[0].alarm1))
             {
                 /* remove from sim */ 
                 pthread_mutex_lock(&lock_queue);
@@ -446,7 +446,6 @@ void *boom_gate_exit(void *ptr)
             pthread_mutex_unlock(&(sharedMem->exits[exit].LPR.lock));
             
             //printf("Boom %d status 1: %c\n", exit, sharedMem->exits[exit].BG.status);
-
             /* wait for open signal from manager */
             pthread_mutex_lock(&(sharedMem->exits[exit].BG.lock));
             while (sharedMem->exits[exit].BG.status != 'R')
