@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include "hashtable.h"
-#include "../shared_memory/sharedMemory.h"
+#include "sharedMemory.h"
 #include <sys/stat.h>
 #include <semaphore.h>
 #include <string.h>
@@ -423,9 +423,10 @@ void *displayStatus(void *arg) {
                 printf("| Level %d Temp: %d ", i + 1, sharedMem->levels[i].tempSen1);
             }
         }
+        //alarm
+        printf("| Alarm: %s\n\n", sharedMem->levels[0].alarm1);
         //revenue
         printf("| Revenue so far: %.2f\n\n", mem->billing);
-        printf("| Total Capacity: %d/%d\n", mem->totalCap, NUM_LEVELS * NUM_CARS_PER_LEVEL);
         pthread_mutex_unlock(&mem_lock);
         //wait 50ms
         fflush(stdout);

@@ -8,7 +8,7 @@
 #include <fcntl.h>
 #include <semaphore.h>
 #include "linkedlist.h"
-#include "../shared_memory/sharedMemory.h"
+#include "sharedMemory.h"
 #include "hashtable.h"
 
 /* Define carpark constraints */
