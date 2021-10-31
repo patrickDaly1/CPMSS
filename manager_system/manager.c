@@ -252,6 +252,8 @@ void *miniManagerExit(void *arg) {
     }
     int lprNum = info->lprNum;
     shm *sharedMem = info->mem->sharedMem;
+
+    sharedMem->exits[lprNum].BG.status = 'C';
     while(1) {
         //Check allocated lpr - use condition variable and mutex before accesing it
         pthread_mutex_lock(&(sharedMem->exits[lprNum].LPR.lock));
