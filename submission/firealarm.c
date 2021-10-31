@@ -150,6 +150,11 @@ int main()
 			}
 			alarm_active = false;
 		}
+		else {
+			for (int i = 0; i < num_levels; ++i) {
+				shared_mem->levels[i].alarm1 = false;
+			}
+		}
 		usleep(1000);
 	}
 
