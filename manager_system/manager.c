@@ -474,25 +474,10 @@ int main(void) {
     }
     //Setup file reader
     FILE *fp;
-    // size_t len = 10;
-    // char *line;
-    // size_t read;
     if((fp = fopen("plates.txt", "r")) == NULL) {
         perror("fopen\n");
         return 1;
     }
-    // if((line = (char *)malloc(len * sizeof(char))) == NULL) {
-    //     perror("Unable to allocate memory for line\n");
-    //     exit(2);
-    // }
-    // //Read plates.txt per line and store in hashtable
-    // while((read = getline(&line, &len, fp)) != -1) { //function
-    //     char copy[read];
-    //     strncpy(copy, line, read - 1);
-    //     htab_add(&h, copy, 0, 0);
-    // }
-    // free(line);
-
     char regos[100][7];
     int index = 0;
     while(fscanf(fp, "%s", regos[index]) != EOF) {
@@ -502,8 +487,6 @@ int main(void) {
         htab_add(&h, regos[i], 0, 0);
     }
     fclose(fp);
-
-    // htab_print(&h);
 
     //allocate memory for capacity and billed money (cents) - maybe make struct for this
     mem_t *info = (mem_t *)malloc(sizeof(mem_t)); //function
