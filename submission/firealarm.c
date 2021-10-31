@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <pthread.h>
-#include "../shared_memory/sharedMemory.h"
+#include "sharedMemory.h"
 
 int shm_fd;
 const char* key = "PARKING";
@@ -140,11 +140,11 @@ int main()
 			char* evacmessage = "EVACUATE ";
 			for (char* p = evacmessage; *p != '\0'; p++) {
 				for (int i = 0; i < num_levels; i++) {
-					pthread_mutex_lock(&shared_mem->entrances[i].SIGN.lock);
+					// pthread_mutex_lock(&shared_mem->entrances[i].SIGN.lock);
 
-					shared_mem->entrances[i].SIGN.display = *p;
+					// shared_mem->entrances[i].SIGN.display = *p;
 
-					pthread_mutex_unlock(&shared_mem->entrances[i].SIGN.lock);
+					// pthread_mutex_unlock(&shared_mem->entrances[i].SIGN.lock);
 				}
 				usleep(20000);
 			}

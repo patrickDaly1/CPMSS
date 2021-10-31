@@ -424,7 +424,7 @@ void *displayStatus(void *arg) {
             }
         }
         //alarm
-        printf("| Alarm: %s\n\n", sharedMem->levels[0].alarm1);
+        printf("| Alarm: %d\n\n", sharedMem->levels[0].alarm1);
         //revenue
         printf("| Revenue so far: %.2f\n\n", mem->billing);
         pthread_mutex_unlock(&mem_lock);
