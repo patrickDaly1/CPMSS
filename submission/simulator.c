@@ -132,6 +132,7 @@ int main(int argc, char** argv)
     
     for (int i = 0; i < num_levels; ++i) {
         sharedMem->levels[i].tempSen1 = 1;
+        sharedMem->levels[i].alarm1 = false;
     }
 
     sleep(5); // sleep statement to sync systems 
