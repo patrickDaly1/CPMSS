@@ -558,6 +558,7 @@ void *car_movement(void *aCar)
 void *temp_sensor(void *arg)
 {
     int count = 0;
+    sharedMem->levels[i].tempSen1 = 0;
     for(;;)
     {
         if (count < 400)
