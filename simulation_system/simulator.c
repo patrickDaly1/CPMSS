@@ -433,7 +433,7 @@ void *boom_gate_exit(void *ptr)
 
         // search to find first car at corresponding exit queue
         pthread_mutex_lock(&lock_queue);
-        curr_car =  searchExit(exitQueue, exit);;
+        curr_car =  searchExit(exitQueue, exit);
         pthread_mutex_unlock(&lock_queue);
         
         if (curr_car != NULL) // if car is found
