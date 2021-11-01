@@ -1,9 +1,22 @@
+/**
+ * All code for liked list is form: https://www.geeksforgeeks.org/data-structures/linked-list/
+ * 
+ * - used various aspects of their functions and pieced them together to get below code
+ * - precoded liked list was used as it is a very generic method of storing data and re-engineering 
+ *   this was decided to be uneccisary 
+ * - only minor modifications were made to adapt the data structures to work for comparrison of cars
+ * 
+*/
+
 #include <stdbool.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+/**
+ * structure for a car
+*/
 typedef struct car 
 {
     char rego[6];
@@ -12,7 +25,9 @@ typedef struct car
     int exit;
 } car_t;
 
-// A linked list node
+/**
+ * structure for a node
+*/
 struct Node
 {
   struct car* data;
@@ -51,6 +66,7 @@ void append(struct Node** head_ref, struct car* new_data)
     return;   
 }
 
+/* given a key locate the node and remove it */
 void deleteNode(struct Node** head_ref, char* key)
 {
     // Store head node
@@ -89,6 +105,7 @@ void printList(struct Node *node)
     }
 }
 
+/* counts number of elements in list */
 int listCount(struct Node *node)
 {
     int count = 0;
@@ -100,6 +117,7 @@ int listCount(struct Node *node)
     return count;
 }
 
+/* locate first car at given entry */
 car_t* searchEntry(struct Node* head, int x)
 {
     struct Node* current = head;  // Initialize current
@@ -112,6 +130,7 @@ car_t* searchEntry(struct Node* head, int x)
     return NULL;
 }
 
+/* locates car at given exit */
 car_t* searchExit(struct Node* head, int x)
 {
     struct Node* current = head;  // Initialize current
@@ -124,6 +143,7 @@ car_t* searchExit(struct Node* head, int x)
     return NULL;
 }
 
+/* given key returns if item is in list */
 bool search(struct Node* head, char* x)
 {
     struct Node* current = head;  // Initialize current
