@@ -222,8 +222,6 @@ void *miniManagerLevel(void *arg) {
         if(car->levelParked == lprNum + 1)
         {
             if (info->mem->levelCap[car->levelParked - 1] != 0){
-            //--(info->mem->levelCap[car->levelParked - 1]);
-            //info->mem->levelCap[car->levelParked - 1] = 0;
             car->levelParked = 0;
             }
         }
@@ -300,19 +298,10 @@ void *miniManagerEntrance(void *arg) {
         pthread_cond_wait(&(sharedMem->entrances[lprNum].LPR.condition), &(sharedMem->entrances[lprNum].LPR.lock));
         pthread_mutex_unlock(&(sharedMem->entrances[lprNum].LPR.lock));
         pthread_mutex_lock(&mem_lock);
-        //printf("Rego read: %s\n", sharedMem->entrances[lprNum].LPR.rego);
-        //printf("%ld", sizeof(sharedMem->entrances[lprNum].LPR.rego) / sizeof(char));
-        //printf("Rego found: %s\n", (htab_find(info->mem->h, sharedMem->entrances[lprNum].LPR.rego))->rego);
-        //Check if rego in list and if car park full
-        //sharedMem->entrances[lprNum].LPR.rego
-        //copy string into char[]
         char regoCpy[7];
         memcpy(regoCpy, sharedMem->entrances[lprNum].LPR.rego, 6);
-        //printf("Rego copy: %s\n", regoCpy);
-        // if(htab_find(info->mem->h, sharedMem->entrances[lprNum].LPR.rego) == NULL) {
         if(htab_find(info->mem->h, regoCpy) == NULL) {
             //doesn't exist in list
-            // printf("Setting status to 'X' in: %d\n", lprNum);
             pthread_mutex_lock(&(sharedMem->entrances[lprNum].SIGN.lock));
             sharedMem->entrances[lprNum].SIGN.display = 'X';
             pthread_cond_signal(&(sharedMem->entrances[lprNum].SIGN.condition));
@@ -326,7 +315,6 @@ void *miniManagerEntrance(void *arg) {
         } else if(sharedMem->levels[0].alarm1){
             // do nothing with cars
         }else {
-            // printf("Setting status to valid number\n");
             //exists in list and car park not full
             ++(info->mem->totalCap);
             htab_change_time(info->mem->h, regoCpy, getTimeMilli());

@@ -34,13 +34,29 @@
     - frees all necessary memory
 
 ## Entrance management
+    - the entrance manager deals with all the entrances
+    - it waits for new LPRs to come through in a wait statement
+    - it checks the rego is in the hashtable
+    - the manager checks there isn't an alarm present - if there is it doesn't change anything
+    - if the carpark is full then no cars can enter
+    - otherwise the car can enter, the status display is changed to the corresponding level and the boom gate 
+    process is initiated (boomGateOp)
 
 ## Exit management
+    - exit manager deals with all the exits in the system
+    - it waits for a new LPR to come through in a wait statement
+    - it adds the billing to the corresponding rego into a billing file (billing.txt - creating it if it doesn't exist)
+    - it then opens the boom gate (boomGateOp) to allow the car through
 
 ## level management
+    - the level manager deals with each level
+    - it represents 1 level per thread, so each thread deals with a level
+    - if a level manager reads a new LPR in the shared memory then it's added to this level
+    - the corresponding level capacities are altered accordingly
 
 ## status display - quick
-
+    - this displays all the relevant memory for the system as a whole (both from thread memory and shared memory)
+    
 ## Simulator
 ## Setup in main
     - sim begins by setting up the predefined shared memory structure
