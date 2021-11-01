@@ -46,7 +46,6 @@ pthread_mutex_t mem_lock;
 
 /** The Manager 
  * 
- * To do:
  * 
  * Monitor status of LPR sensors - shared memory
  * Keep track of where each car is in carpark - hash table
@@ -60,9 +59,16 @@ pthread_mutex_t mem_lock;
  * current status of boom gates, signs, temperature sensors and alarms and current car park revenue
  */
 
+/**
+ * Returns the current monotonic time in milliseconds (time since some chosen epoch).
+ * 
+ * Returns: (long) a long integer of the current time in milliseconds. 
+ */
 long getTimeMilli(void) {
-    long ns; // Nanoseconds
-    long s;  // Seconds
+    // nano seconds
+    long ns;
+    // milli seconds
+    long s;
     struct timespec spec;
 
     if(clock_gettime(CLOCK_MONOTONIC, &spec) < 0) {
@@ -70,13 +76,18 @@ long getTimeMilli(void) {
         perror("clock_gettime\n");
         exit(1);
     }
-
-    s  = spec.tv_sec * 1.0e3; // convert seconds to milliseconds
-    ns = spec.tv_nsec / 1.0e6; // convert nanoseconds to milliseconds
+    // convert to milliseconds
+    s  = spec.tv_sec * 1.0e3;
+    ns = spec.tv_nsec / 1.0e6;
 
     return ns + s;
 }
 
+/**
+ * Finds any level with the lowest number of cars.
+ * 
+ * Returns: (int) an integer of an available level.
+ */
 int findFreeLevel(mem_t *mem) {
     //lock mutex
     pthread_mutex_lock(&mem_lock);
@@ -96,41 +107,40 @@ int findFreeLevel(mem_t *mem) {
     return lowestLvl + 1;
 }
 
+/**
+ * Performs the boom gate operation for the entrance. This includes 
+ * Raising the boom gate, waiting for the simulator to repsond with
+ * the boom gate open, then waiting for the car to pass, then closing 
+ * the boom gate and waiting for the simulator to confirm it being closed. 
+ * 
+ * Returns: (void) nothing is returned. 
+ */
 void bgEntrance(shm *sharedMem, int typeIndex) {
-    //printf("Boom gate opening at %d\n", typeIndex);
     usleep(2000);
-    //printf("Boom %d status 1: %c\n", typeIndex, sharedMem->entrances[typeIndex].BG.status);
     pthread_mutex_lock(&(sharedMem->entrances[typeIndex].BG.lock));
     sharedMem->entrances[typeIndex].BG.status = 'R';
     pthread_cond_signal(&(sharedMem->entrances[typeIndex].BG.condition));
     pthread_mutex_unlock(&(sharedMem->entrances[typeIndex].BG.lock));    
-
     // wait for sim to change it to open
     pthread_mutex_lock(&(sharedMem->entrances[typeIndex].BG.lock));
     while (sharedMem->entrances[typeIndex].BG.status != 'O')
         pthread_cond_wait(&(sharedMem->entrances[typeIndex].BG.condition), &(sharedMem->entrances[typeIndex].BG.lock));
     // check changed to right value
-    //printf("Boom %d status 2: %c\n", typeIndex, sharedMem->entrances[typeIndex].BG.status);
     if (sharedMem->entrances[typeIndex].BG.status != 'O')
     {
         // Hasn't opened properly
         pthread_mutex_unlock(&(sharedMem->entrances[typeIndex].BG.lock));
         printf("Boom gate %d: ", typeIndex);
         perror("Error raising boom gate for entrance\n");
-        //exit(1);
     }
     pthread_mutex_unlock(&(sharedMem->entrances[typeIndex].BG.lock));
-    
     // BG opened, wait 5ms?
     usleep(20000);
     // close boom gate
-    //printf("Boom %d status 3: %c\n", typeIndex, sharedMem->entrances[typeIndex].BG.status);
     pthread_mutex_lock(&(sharedMem->entrances[typeIndex].BG.lock));
     sharedMem->entrances[typeIndex].BG.status = 'L';
     pthread_cond_signal(&(sharedMem->entrances[typeIndex].BG.condition));
     pthread_mutex_unlock(&(sharedMem->entrances[typeIndex].BG.lock));
-    //printf("Boom %d status 3: %c\n", typeIndex, sharedMem->entrances[typeIndex].BG.status);
-
     // check BG is closed
     pthread_mutex_lock(&(sharedMem->entrances[typeIndex].BG.lock));
     while (sharedMem->entrances[typeIndex].BG.status != 'C')
@@ -146,20 +156,25 @@ void bgEntrance(shm *sharedMem, int typeIndex) {
     pthread_mutex_unlock(&(sharedMem->entrances[typeIndex].BG.lock));
 }
 
+/**
+ * Performs the boom gate operation for the exit. This includes 
+ * Raising the boom gate, waiting for the simulator to repsond with
+ * the boom gate open, then waiting for the car to pass, then closing 
+ * the boom gate and waiting for the simulator to confirm it being closed. 
+ * 
+ * Returns: (void) nothing is returned. 
+ */
 void bgExit(shm *sharedMem, int typeIndex) {
     usleep(2000);
-    //printf("Boom %d status 1: %c\n", typeIndex, sharedMem->exits[typeIndex].BG.status);
     pthread_mutex_lock(&(sharedMem->exits[typeIndex].BG.lock));
     sharedMem->exits[typeIndex].BG.status = 'R';
     pthread_cond_signal(&(sharedMem->exits[typeIndex].BG.condition));
     pthread_mutex_unlock(&(sharedMem->exits[typeIndex].BG.lock));
-
     
     // wait for sim to change it to open
     pthread_mutex_lock(&(sharedMem->exits[typeIndex].BG.lock));
     while (sharedMem->exits[typeIndex].BG.status != 'O')
         pthread_cond_wait(&(sharedMem->exits[typeIndex].BG.condition), &(sharedMem->exits[typeIndex].BG.lock));
-    //printf("Boom %d status 2: %c\n", typeIndex, sharedMem->exits[typeIndex].BG.status);
     // check changed to right value (check this is how condition var works)
     if (sharedMem->exits[typeIndex].BG.status != 'O')
     {
@@ -171,14 +186,11 @@ void bgExit(shm *sharedMem, int typeIndex) {
     pthread_mutex_unlock(&(sharedMem->exits[typeIndex].BG.lock));
     // BG opened, wait 5ms?
     usleep(20000);
-    //printf("Boom %d status 3: %c\n", typeIndex, sharedMem->exits[typeIndex].BG.status);
     // close boom gate
     pthread_mutex_lock(&(sharedMem->exits[typeIndex].BG.lock));
     sharedMem->exits[typeIndex].BG.status = 'L';
     pthread_cond_signal(&(sharedMem->exits[typeIndex].BG.condition));
     pthread_mutex_unlock(&(sharedMem->exits[typeIndex].BG.lock));
-    //printf("Boom %d status 4: %c\n", typeIndex, sharedMem->exits[typeIndex].BG.status);
-
     // check BG is closed
     pthread_mutex_lock(&(sharedMem->exits[typeIndex].BG.lock));
     while (sharedMem->exits[typeIndex].BG.status != 'C')
@@ -190,10 +202,14 @@ void bgExit(shm *sharedMem, int typeIndex) {
         perror("Error closing boom gate for exit\n");
         exit(1);
     }
-    //printf("Boom %d status 5: %c\n", typeIndex, sharedMem->exits[typeIndex].BG.status);
     pthread_mutex_unlock(&(sharedMem->exits[typeIndex].BG.lock));
 }
 
+/**
+ * Determines which boom gate operation to perform by the given parameter (type) - exit or entrance.
+ * 
+ * Returns: (void) nothing is returned. 
+ */
 void boomGateOp(shm *sharedMem, char type, int typeIndex) {
     if(type == 'n') {
         //entrance
@@ -204,6 +220,14 @@ void boomGateOp(shm *sharedMem, char type, int typeIndex) {
     }
 }
 
+/**
+ * This function is a thread function that manages a particular level. It monitors the shared memory 
+ * and waits for a new registration to come through. When this happens, it checks that the registration is in 
+ * the hashtable, changes the stored cars level and alters the level capacity accordingly.
+ * 
+ * returns: (void *) NULL is returned, nothing important is needed for the return. This part fo the program is designed
+ * for a real life car park, so ideally it goes on forever. 
+ */
 void *miniManagerLevel(void *arg) {
     thread_mem_t *info = (thread_mem_t *)arg;
     int lprNum = info->lprNum;
@@ -213,12 +237,10 @@ void *miniManagerLevel(void *arg) {
         pthread_mutex_lock(&(sharedMem->levels[lprNum].LPR.lock));
         pthread_cond_wait(&(sharedMem->levels[lprNum].LPR.condition), &(sharedMem->levels[lprNum].LPR.lock));
         pthread_mutex_lock(&mem_lock);
-
         //new car on level - increment level capacity, if was on previous level - decrement capacity
         char regoCpy[7];
         memcpy(regoCpy, sharedMem->levels[lprNum].LPR.rego, 6);
         item_t *car = htab_find(info->mem->h, regoCpy);
-
         if(car->levelParked == lprNum + 1)
         {
             if (info->mem->levelCap[car->levelParked - 1] != 0){
@@ -237,10 +259,15 @@ void *miniManagerLevel(void *arg) {
     return NULL;
 }
 
-double validateBill(void) {
-    return 0;
-}
-
+/**
+ * This function is a thread function that manages a particular exit. It sets up the billing.txt file 
+ * and waits for a new registration number to appear. Once this happens, the car is searched in the 
+ * hashtable, the billing is calculated and entered into the billing.txt file, the overall car capacity
+ * is decreased and the exit boom agte operation is initiated so that the car can leave. 
+ * 
+ * Returns: (void *) NULL is returned, as nothing important is needed if this function finishes. This part
+ * of the program is ideally suppose to last forever to mimic that of a real car park system. 
+ */
 void *miniManagerExit(void *arg) {
     thread_mem_t *info = (thread_mem_t *)arg;
     //setup file stream
@@ -250,7 +277,6 @@ void *miniManagerExit(void *arg) {
     }
     int lprNum = info->lprNum;
     shm *sharedMem = info->mem->sharedMem;
-
     sharedMem->exits[lprNum].BG.status = 'C';
     while(1) {
         //Check allocated lpr - use condition variable and mutex before accesing it
@@ -266,7 +292,6 @@ void *miniManagerExit(void *arg) {
         //save into file
         fprintf(fp, "%s %.2f\n", sharedMem->exits[lprNum].LPR.rego, bill);
         //decrement overall capacity, increase revenue
-
         --(info->mem->totalCap);
         info->mem->billing += bill;
         //boom gate operation
@@ -283,13 +308,22 @@ void *miniManagerExit(void *arg) {
     return NULL;
 }
 
+/**
+ * This functions is a thread function that deals with a particular entrance. It opens the shared memory
+ * and awaits for a new car registration to appear. Once this happens, the registration is checked inside the
+ * hashtable, if it's not in the hashtable, the display sign is set to 'X'; if the car park is full, the display
+ * sign is set to 'F'. Otherwise, the car is accepted and a free level is displayed in the status display and the
+ * boom gate operation for the entrance is triggered.
+ * 
+ * returns: (void *) NULL is returned as nothing important is expected on the return. This part
+ * of the program is ideally suppose to last forever to mimic that of a real car park system. 
+ */
 void *miniManagerEntrance(void *arg) {
     thread_mem_t *info = (thread_mem_t *)arg;
     //constantly check shared memory entrance LPR for regos
     int lprNum = info->lprNum;
     shm *sharedMem = info->mem->sharedMem;
     pthread_mutex_lock(&mem_lock);
-
     sharedMem->entrances[lprNum].BG.status = 'C';
     pthread_mutex_unlock(&mem_lock);
     while(1) {
@@ -319,31 +353,34 @@ void *miniManagerEntrance(void *arg) {
             ++(info->mem->totalCap);
             htab_change_time(info->mem->h, regoCpy, getTimeMilli());
             pthread_mutex_lock(&(sharedMem->entrances[lprNum].SIGN.lock));
-
             pthread_mutex_unlock(&mem_lock);
-            sharedMem->entrances[lprNum].SIGN.display = findFreeLevel(info->mem) + '0'; //converts int to char for 0-9
+            sharedMem->entrances[lprNum].SIGN.display = findFreeLevel(info->mem) + '0';
             pthread_cond_signal(&(sharedMem->entrances[lprNum].SIGN.condition));
             pthread_mutex_unlock(&(sharedMem->entrances[lprNum].SIGN.lock));
-            
             //Raise boom gates and unlock thread memory, then relock after opening boom gate
-            
             boomGateOp(sharedMem, 'n', lprNum);
             pthread_mutex_lock(&mem_lock);
-            //increment car park capacity (lpr levels will alter level capacity)
         }
-        //unlock rego and car park memory
-        
+        //unlock car park memory
         pthread_mutex_unlock(&mem_lock);
     }
     return NULL;
 }
 
+/**
+ * This function displays all the relevant data to the terminal then clears 
+ * is all after 50 milliseconds. The information displayed includes thes state 
+ * of the LPRS, the level capacities, the the boom gates, the display signs, the 
+ * state of the temperature sensors, the alarm status and the car park revenue. 
+ * 
+ * Returns: (void *) NULL is returned as nothign valuable is needed on the return. Ideally, this
+ * thread function lasts for as long as a realistic car park should last - forever. 
+ */
 void *displayStatus(void *arg) {
     mem_t *mem = (mem_t *)arg;
     shm *sharedMem = mem->sharedMem;
     while(1) {
         int r = rand()%8;
-        
         printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX Status of Car Park XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n");
         pthread_mutex_lock(&mem_lock);
         //how full each level is
@@ -429,6 +466,16 @@ void *displayStatus(void *arg) {
     return NULL;
 }
 
+
+/**
+ * This is the main function that initialises everything and frees all the necessary memory. It
+ * initialises the thread-shared memory, the hashtable, opens the shared memory, creates all the level threads,
+ * entrance threads and exit threads then frees all the necessary memory if completion of the program ever occurs.
+ * Since the spec didn't specify a means of ending the program, this wasn't necessary - ideally car park programs last 
+ * a long time. 
+ * 
+ * Returns: (int) the status of the program, returns 0 if no problems occured, 1 if they did. 
+ */
 int main(void) {
     //initialise main memory mutex
     if (pthread_mutex_init(&mem_lock, NULL) != 0)
@@ -438,7 +485,7 @@ int main(void) {
     }
     //open the shared memory - key: PARKING (PARKING_TEST for test)
     int shm_fd;
-    const char *key = "PARKING"; //change to "PARKING"
+    const char *key = "PARKING";
     shm *sharedMem;
     size_t shmSize = 2920;
     //Locate the segment
@@ -476,7 +523,6 @@ int main(void) {
         htab_add(&h, regos[i], 0, 0);
     }
     fclose(fp);
-
     //allocate memory for capacity and billed money (cents) - maybe make struct for this
     mem_t *info = (mem_t *)malloc(sizeof(mem_t)); //function
     info->billing = 0;
@@ -524,7 +570,6 @@ int main(void) {
         perror("shm_unlink");
     }
     htab_destroy(&h);
-    free(info); //check if necessary or does thread do it?
-    //free thread info memory - iterate
+    free(info);
     return 0;
 }
