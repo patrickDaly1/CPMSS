@@ -1,6 +1,8 @@
 
 * Note all parts of assignemnt that are wanting to be marked need to be demonstrated in the video presentation 
 
+# Usable for differing levels, entrances and exits (max 5 for each)
+
 # Explain functinality 
 ## Car moving through system
     - cars are randomly generated in simulator and assigned an entry to queue up behings
@@ -25,6 +27,19 @@
     - if a fire alarm is triggered car will no longer be allowed into carpark, boom gates will open, evac message is displayed on signs
 
 # Manager
+## Setup in main
+    - manager connects to share dmemory
+    - initialises hashtable with plates.txt
+    - initialises the thread memory used
+    - frees all necessary memory
+
+## Entrance management
+
+## Exit management
+
+## level management
+
+## status display - quick
 
 ## Simulator
 ## Setup in main

@@ -441,13 +441,6 @@ void *displayStatus(void *arg) {
     return NULL;
 }
 
-int inputChecker(void) {
-    while(1) {
-        //program goes on forever
-    }
-    return 0;
-}
-
 int main(void) {
     //initialise main memory mutex
     if (pthread_mutex_init(&mem_lock, NULL) != 0)
@@ -535,7 +528,6 @@ int main(void) {
     for(int i = 0; i < total; ++i) {
         pthread_join(pid[i], NULL);
     }
-    // inputChecker();
     //close
     if (munmap(sharedMem, shmSize) != 0) {
         perror("munmap");
