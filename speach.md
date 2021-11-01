@@ -1,5 +1,29 @@
 
 * Note all parts of assignemnt that are wanting to be marked need to be demonstrated in the video presentation 
+
+# Explain functinality 
+## Car moving through system
+    - cars are randomly generated in simulator and assigned an entry to queue up behings
+    - lpr at entrence reads lp and signals to the manager
+    - manager then checks this value and sees if car is permitted into system / carpark isnt full / no fire alarm 
+    - if car is not allowed into caprark it is removed from simulation
+    - if car is allowed into carpark manager assigns car with parking level and boom gate waits for manager to instuct boom gate opperations and simulates opening and closing times
+    - while boom is open car is moved into carpark and created a thread that will perform the cars functionality
+    - once in carpark car will travel to parking spot triggering lpr on level 
+    - *** ADD HERE WHAT MANAGER DOES AFTER RECIEVING LPR TRIGGER ON LEVEL ***
+    - after car is finished parking for random duration of time it will be decide a random exit and move towards there
+    - car will move towards exit queue and trigger lpr on way out
+    - *** ADD HERE WHAT MANAGER DOES AFTER RECIEVING LPR TRIGGER ***
+    - exit lpr will read lp and send trigger to manager
+    - *** ADD WHAT MANAGER DOES WITH EXIT TRIGGER ***
+    - sim will then wait for manager to send boom opperations where simulator with simulate opening and closing times
+    - while boom is open car will be removed from simulation
+
+## Fire alarm
+    - simulator will randomly generate temperatures and send update the temp sensors with them
+    - *** ADD HERE WHAT FIRE ALARM DOES ***
+    - if a fire alarm is triggered car will no longer be allowed into carpark, boom gates will open, evac message is displayed on signs
+
 # Manager
 
 ## Simulator
