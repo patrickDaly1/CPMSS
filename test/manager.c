@@ -244,7 +244,8 @@ void *miniManagerLevel(void *arg) {
         if(car->levelParked == lprNum + 1)
         {
             if (info->mem->levelCap[car->levelParked - 1] != 0){
-            car->levelParked = 0;
+                car->levelParked = 0;
+                --(info->mem->levelCap[lprNum]);
             }
         }
         else 
@@ -387,8 +388,8 @@ void *displayStatus(void *arg) {
         for (int i = 0; i < NUM_LEVELS; ++i) {
             if (r == 1)
             {
-                if (mem->levelCap[i] != 0)
-                    --mem->levelCap[i];
+                //if (mem->levelCap[i] != 0)
+                    //--mem->levelCap[i];
             }
             if (i == NUM_LEVELS - 1) {
                 printf("| Level %d: %d/%d\n\n", i + 1, mem->levelCap[i], NUM_CARS_PER_LEVEL);
