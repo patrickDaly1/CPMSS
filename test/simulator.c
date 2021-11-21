@@ -372,10 +372,12 @@ void *boom_gate_entry(void *ptr)
                 //printf("entry: %d, carpark: %d, exit: %d\n", listCount(entryQueue), listCount(inCarpark), listCount(exitQueue));
                 
                 /* CREATE NEW CAR THREAD */
-                pthread_t car;
-                void * arg = malloc(sizeof(car_t));
-                arg = curr_car;
-                pthread_create(&car, NULL, car_movement, arg); 
+                {
+                    pthread_t car;
+                    void * arg = malloc(sizeof(car_t));
+                    arg = curr_car;
+                    pthread_create(&car, NULL, car_movement, arg); 
+                }
 
                 //printf("Boom %d status 4: %c\n", entry, sharedMem->entrances[entry].BG.status);
 
